@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Set fallback ring color (lime-400) */
+  :root {
+    --ring: #a3e635;
+  }
+  body {
+    @apply bg-neutral-50 text-neutral-800 font-sans antialiased;
+  }
+  ::selection {
+    @apply bg-lime-300/60 text-emerald-900;
+  }
+}
+
+@layer components {
+  .bg-brand {
+    @apply bg-gradient-to-br from-emerald-950 via-emerald-900 to-lime-900;
+  }
+  .btn-brand {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-medium bg-gradient-to-br from-emerald-950 via-emerald-900 to-lime-900 shadow-brand hover:brightness-110 transition focus:outline-none focus:ring-2 focus:ring-lime-400 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed;
+  }
+  .badge-brand {
+    @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium text-white bg-gradient-to-br from-emerald-950 via-emerald-900 to-lime-900;
+  }
+  .card {
+    @apply rounded-2xl bg-white shadow-sm border border-emerald-900/5;
+  }
+  .card-hover {
+    @apply transition hover:shadow-brand;
+  }
+  .focus-visible-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[color:var(--ring)];
+  }
+  .input {
+    @apply w-full rounded-xl border border-emerald-900/15 bg-white px-3 py-2 text-sm shadow-sm placeholder:text-neutral-400 focus-visible-ring focus:border-transparent;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-emerald-900/20 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800 hover:bg-emerald-100 cursor-pointer transition;
+  }
+  .chip-active {
+    @apply bg-gradient-to-br from-emerald-900 to-lime-800 text-white border-transparent;
+  }
+  .skeleton {
+    @apply animate-pulse rounded bg-emerald-900/10;
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-emerald-900/30 rounded;
+  }
+  .dialog-overlay {
+    @apply fixed inset-0 bg-black/40 backdrop-blur-sm animate-fade;
+  }
+  .dialog-content {
+    @apply outline-none;
+  }
+  .animate-fade {
+    animation: fade 0.2s ease forwards;
+  }
+}
+
+@layer utilities {
+  .heading-1 {
+    @apply text-[32px] leading-10 font-bold;
+  }
+  .heading-2 {
+    @apply text-[24px] leading-8 font-semibold;
+  }
+  .heading-3 {
+    @apply text-[20px] leading-7 font-semibold;
+  }
+  .text-body {
+    @apply text-[16px] leading-6;
+  }
+  .text-caption {
+    @apply text-[12px] leading-[18px];
+  }
+  .line-limit-2 {
+    @apply line-clamp-2;
+  }
+  .line-limit-3 {
+    @apply line-clamp-3;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0ms !important;
+  }
+}
