@@ -8,6 +8,7 @@ import { t } from "../../i18n/index.js"; // added
 const navItems = [
   { to: "/admin", label: t("nav.dashboard", "Bảng điều khiển"), exact: true },
   { to: "/admin/recipes", label: t("nav.recipes", "Công thức") },
+  { to: "/admin/posts", label: t("nav.posts", "Bài viết") },
   { to: "/admin/media", label: t("nav.media", "Thư viện media") },
   { to: "/admin/taxonomy", label: t("nav.taxonomy", "Danh mục & Thẻ") },
   { to: "/admin/moderation", label: t("nav.moderation", "Kiểm duyệt") },

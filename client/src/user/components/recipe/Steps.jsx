@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { FaCheck, FaClock, FaThermometerHalf } from "react-icons/fa";
 
 export default function Steps({ steps = [] }) {
   const [done, setDone] = useState(() => new Set());
@@ -45,7 +46,7 @@ export default function Steps({ steps = [] }) {
                     : "bg-white border-emerald-900/20 text-emerald-700 hover:bg-emerald-900/10"
                 }`}
               >
-                {finished ? "✓" : idx + 1}
+                {finished ? <FaCheck className="w-3 h-3" /> : idx + 1}
               </button>
               <div className="flex-1 text-emerald-900/90 whitespace-pre-line">
                 {s.description ||
@@ -53,12 +54,12 @@ export default function Steps({ steps = [] }) {
                   (typeof s === "string" ? s : "Bước thực hiện")}
                 {s.duration && s.duration > 0 && (
                   <div className="mt-2 text-xs text-emerald-700 font-medium">
-                    ⏱ {s.duration} phút
+                    <FaClock className="inline w-3 h-3 mr-1" /> {s.duration} phút
                   </div>
                 )}
                 {s.temperature && (
                   <div className="mt-1 text-xs text-emerald-700">
-                    🌡️ {s.temperature}
+                    <FaThermometerHalf className="inline w-3 h-3 mr-1" /> {s.temperature}
                   </div>
                 )}
               </div>

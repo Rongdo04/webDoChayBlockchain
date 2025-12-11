@@ -10,6 +10,8 @@ const Reports = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(new Set());
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [showModal, setShowModal] = useState(false);
   const [filters, setFilters] = useState({
     status: "",
     targetType: "",
@@ -88,7 +90,12 @@ const Reports = () => {
       console.log("Loading stats...");
       const response = await getReportsStats();
       console.log("Stats response:", response);
-      setStats(response.data || response);
+      const statsData = response.data || response;
+      console.log("Stats data:", statsData);
+      console.log("Stats byStatus:", statsData.byStatus);
+      console.log("Pending count:", statsData.byStatus?.pending);
+      console.log("Resolved count:", statsData.byStatus?.resolved);
+      setStats(statsData);
     } catch (error) {
       console.error("Error loading stats:", error);
     }
@@ -101,16 +108,45 @@ const Reports = () => {
     try {
       setUpdating((prev) => new Set(prev).add(reportId));
 
-      const updatedReport = await updateReportStatus(
+      const apiResponse = await updateReportStatus(
         reportId,
         newStatus,
         notes
       );
 
-      // Update local state
-      setReports((prev) =>
-        prev.map((report) => (report._id === reportId ? updatedReport : report))
-      );
+      console.log("Updated report from API:", apiResponse);
+
+      // Extract the updated report data from API response
+      const updatedReportData = apiResponse?.data?.data || apiResponse?.data || apiResponse;
+
+      // Update local state with merged data
+      setReports((prev) => {
+        const newReports = prev.map((report) => {
+          if (report._id === reportId || report.id === reportId) {
+            // Merge old data with new data to preserve all fields
+            const updatedReport = {
+              ...report,
+              ...updatedReportData,
+              status: newStatus,
+              _id: report._id || report.id,
+              id: report.id || report._id,
+            };
+            console.log("Updated report in state:", updatedReport);
+            return updatedReport;
+          }
+          return report;
+        });
+        return newReports;
+      });
+
+      // Update selectedReport if modal is open
+      if (selectedReport && (selectedReport._id === reportId || selectedReport.id === reportId)) {
+        setSelectedReport((prev) => ({
+          ...prev,
+          ...updatedReportData,
+          status: newStatus,
+        }));
+      }
 
       toast.success("Cập nhật trạng thái thành công");
 
@@ -126,6 +162,18 @@ const Reports = () => {
         return newSet;
       });
     }
+  };
+
+  // View report details
+  const handleView = (report) => {
+    setSelectedReport(report);
+    setShowModal(true);
+  };
+
+  // Close modal
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedReport(null);
   };
 
   // Delete report
@@ -359,61 +407,37 @@ const Reports = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        {report.status === "pending" && (
-                          <>
-                            <button
-                              onClick={() =>
-                                handleUpdateStatus(report._id, "reviewed")
-                              }
-                              disabled={updating.has(report._id)}
-                              className="text-blue-600 hover:text-blue-900 disabled:opacity-50"
-                            >
-                              Xem
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleUpdateStatus(report._id, "resolved")
-                              }
-                              disabled={updating.has(report._id)}
-                              className="text-green-600 hover:text-green-900 disabled:opacity-50"
-                            >
-                              Giải quyết
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleUpdateStatus(report._id, "rejected")
-                              }
-                              disabled={updating.has(report._id)}
-                              className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                            >
-                              Từ chối
-                            </button>
-                          </>
+                        <button
+                          onClick={() => handleView(report)}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          Xem
+                        </button>
+                        {report.status !== "resolved" && (
+                          <button
+                            onClick={() => handleUpdateStatus(report._id, "resolved")}
+                            disabled={updating.has(report._id)}
+                            className="text-green-600 hover:text-green-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                            title="Đánh dấu đã xử lý"
+                          >
+                            {updating.has(report._id) ? (
+                              <>
+                                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Đang xử lý...
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                Đã xử lý
+                              </>
+                            )}
+                          </button>
                         )}
-
-                        {report.status === "reviewed" && (
-                          <>
-                            <button
-                              onClick={() =>
-                                handleUpdateStatus(report._id, "resolved")
-                              }
-                              disabled={updating.has(report._id)}
-                              className="text-green-600 hover:text-green-900 disabled:opacity-50"
-                            >
-                              Giải quyết
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleUpdateStatus(report._id, "rejected")
-                              }
-                              disabled={updating.has(report._id)}
-                              className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                            >
-                              Từ chối
-                            </button>
-                          </>
-                        )}
-
                         <button
                           onClick={() => handleDelete(report._id)}
                           className="text-red-600 hover:text-red-900"
@@ -429,6 +453,203 @@ const Reports = () => {
           </div>
         )}
       </div>
+
+      {/* Report Details Modal */}
+      {showModal && selectedReport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Chi tiết báo cáo
+              </h3>
+              <button
+                onClick={handleCloseModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Reporter Info */}
+              <div className="border-b pb-4">
+                <h4 className="font-medium text-gray-900 mb-2">
+                  Thông tin người báo cáo
+                </h4>
+                <div className="flex items-center space-x-3">
+                  <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                    {selectedReport.reporterId?.avatar ? (
+                      <img
+                        src={selectedReport.reporterId.avatar}
+                        alt=""
+                        className="h-10 w-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-sm font-medium text-gray-600">
+                        {selectedReport.reporterId?.name?.charAt(0) || "?"}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {selectedReport.reporterId?.name || "Unknown"}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {selectedReport.reporterId?.email}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Report Details */}
+              <div className="border-b pb-4">
+                <h4 className="font-medium text-gray-900 mb-2">
+                  Thông tin báo cáo
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">
+                      Loại nội dung
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {getTypeLabel(selectedReport.targetType)}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">
+                      Trạng thái
+                    </label>
+                    <span
+                      className={`inline-block px-2 py-1 text-xs font-medium rounded-full border ${getStatusStyle(
+                        selectedReport.status
+                      )}`}
+                    >
+                      {getStatusLabel(selectedReport.status)}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">
+                      Ngày tạo
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {formatDate(selectedReport.createdAt)}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">
+                      Lý do báo cáo
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {selectedReport.reason}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              {selectedReport.description && (
+                <div className="border-b pb-4">
+                  <h4 className="font-medium text-gray-900 mb-2">
+                    Mô tả chi tiết
+                  </h4>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                    {selectedReport.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Admin Notes */}
+              {selectedReport.adminNotes && (
+                <div className="border-b pb-4">
+                  <h4 className="font-medium text-gray-900 mb-2">
+                    Ghi chú của admin
+                  </h4>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                    {selectedReport.adminNotes}
+                  </p>
+                </div>
+              )}
+
+              {/* Resolution Info */}
+              {selectedReport.resolvedAt && (
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">
+                    Thông tin giải quyết
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">
+                        Ngày giải quyết
+                      </label>
+                      <p className="text-sm text-gray-900">
+                        {formatDate(selectedReport.resolvedAt)}
+                      </p>
+                    </div>
+                    {selectedReport.resolvedBy && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Người giải quyết
+                        </label>
+                        <p className="text-sm text-gray-900">
+                          {selectedReport.resolvedBy.name || "Admin"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              {selectedReport.status !== "resolved" && (
+                <button
+                  onClick={() => {
+                    handleUpdateStatus(selectedReport._id, "resolved");
+                    handleCloseModal();
+                  }}
+                  disabled={updating.has(selectedReport._id)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {updating.has(selectedReport._id) ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Đánh dấu đã xử lý
+                    </>
+                  )}
+                </button>
+              )}
+              <button
+                onClick={handleCloseModal}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

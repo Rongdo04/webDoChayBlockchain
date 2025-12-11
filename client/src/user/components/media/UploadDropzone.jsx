@@ -1,6 +1,8 @@
 import React, { useRef, useState } from "react";
+import { FaCheck, FaTimes, FaImage } from "react-icons/fa";
 import { mediaAPI } from "../../../services/mediaAPI.js";
 import { config } from "../../../config/index.js";
+import httpMethods from "../../../services/httpClient.js";
 
 export default function UploadDropzone({ images, onChange }) {
   const inputRef = useRef();
@@ -34,10 +36,14 @@ export default function UploadDropzone({ images, onChange }) {
             `${getBackendUrl()}/uploads/${
               result.filename || result.data?.filename || result.filename
             }`,
+          thumbnailUrl:
+            result.thumbnailUrl || result.data?.thumbnailUrl || null,
           filename:
             result.filename || result.data?.filename || list[index].name,
           originalName: list[index].name,
           type: "uploaded",
+          mediaType:
+            (result.type || result.data?.type) === "video" ? "video" : "image",
         };
 
         return imageObj;
@@ -93,13 +99,13 @@ export default function UploadDropzone({ images, onChange }) {
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,video/mp4,video/webm,video/mov,video/avi,video/quicktime,video/x-msvideo"
           multiple
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
         />
         <p className="text-sm font-medium text-emerald-900">
-          Kéo & thả ảnh hoặc
+          Kéo & thả media (ảnh hoặc video) hoặc
         </p>
         <button
           type="button"
@@ -107,10 +113,11 @@ export default function UploadDropzone({ images, onChange }) {
           disabled={uploading || images.length >= 10}
           className="mt-3 btn-brand disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {uploading ? "Đang tải lên..." : "Chọn ảnh"}
+          {uploading ? "Đang tải lên..." : "Chọn media"}
         </button>
         <p className="mt-2 text-xs text-emerald-700/70">
-          Tối đa 10 ảnh. Ưu tiên JPG/PNG &lt; 1MB.
+          Tối đa 10 media. Ảnh (JPG/PNG) khuyến nghị &lt; 1MB; Video tối đa
+          100MB (MP4, WEBM, MOV, AVI).
           {uploading && (
             <span className="text-emerald-600 font-medium">
               {" "}
@@ -123,8 +130,13 @@ export default function UploadDropzone({ images, onChange }) {
         <ul className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
           {images.map((image, idx) => {
             // Handle both old string format and new object format
-            const imageUrl = typeof image === "string" ? image : image.url;
+            const imageUrl =
+              typeof image === "string"
+                ? image
+                : image.thumbnailUrl || image.url;
             const imageType = typeof image === "object" ? image.type : "base64";
+            const mediaType =
+              typeof image === "object" ? image.mediaType : "image";
 
             return (
               <li key={idx} className="relative group">
@@ -133,18 +145,45 @@ export default function UploadDropzone({ images, onChange }) {
                   alt={`Ảnh ${idx + 1}`}
                   className="w-full h-24 object-cover rounded-xl border border-emerald-900/10"
                 />
+                {mediaType === "video" && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="px-2 py-0.5 text-[10px] rounded bg-black/50 text-white">
+                      VIDEO
+                    </span>
+                  </div>
+                )}
                 {imageType === "uploaded" && (
-                  <div className="absolute top-1 left-1 bg-green-500 text-white text-xs px-1 rounded">
-                    ✓
+                  <div className="absolute top-1 left-1 bg-green-500 text-white text-xs px-1 rounded flex items-center justify-center">
+                    <FaCheck className="w-3 h-3" />
                   </div>
                 )}
                 <button
                   type="button"
-                  onClick={() => onChange(images.filter((_, i) => i !== idx))}
+                  onClick={async () => {
+                    // Attempt to delete uploaded media on server if applicable
+                    try {
+                      if (
+                        typeof image === "object" &&
+                        image.type === "uploaded" &&
+                        (image.id || image._id)
+                      ) {
+                        await httpMethods.delete(
+                          `/upload/${image.id || image._id}`
+                        );
+                      }
+                    } catch (e) {
+                      console.warn(
+                        "Failed to delete uploaded media:",
+                        e?.message || e
+                      );
+                    } finally {
+                      onChange(images.filter((_, i) => i !== idx));
+                    }
+                  }}
                   className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 text-xs opacity-0 group-hover:opacity-100 transition"
                   aria-label="Xoá"
                 >
-                  ✕
+                  <FaTimes className="w-3 h-3" />
                 </button>
               </li>
             );

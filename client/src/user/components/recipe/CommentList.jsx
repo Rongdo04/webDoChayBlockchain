@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { commentsAPI } from "../../../services/commentsAPI.js";
 import { useAuthAdapter } from "../../../auth/useAuthAdapter.js";
 import Toast from "../Toast.jsx";
-
+import { FaStar } from "react-icons/fa";
 export default function CommentList({ recipeId, recipe, initial = [] }) {
   const [comments, setComments] = useState(initial);
   const [text, setText] = useState("");
@@ -147,7 +147,7 @@ export default function CommentList({ recipeId, recipe, initial = [] }) {
       setToast({
         open: true,
         type: "success",
-        message: "Bình luận đã được gửi và đang chờ duyệt",
+        message: "Bình luận đã được gửi và chờ duyệt",
       });
     } catch (err) {
       console.error("Error adding comment:", err);
@@ -232,7 +232,7 @@ export default function CommentList({ recipeId, recipe, initial = [] }) {
                       : "cursor-pointer"
                   }`}
                 >
-                  ★
+                  <FaStar className="inline" />
                 </button>
               ))}
               {rating > 0 && (

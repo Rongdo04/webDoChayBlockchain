@@ -82,7 +82,12 @@ export const recipesAPI = {
   // Create a new recipe (submit)
   createRecipe: async (recipeData) => {
     try {
-      const response = await api.post("/api/recipes", { body: recipeData });
+      // Include walletAddress if provided (from MetaMask)
+      const dataToSend = {
+        ...recipeData,
+        walletAddress: recipeData.walletAddress || null,
+      };
+      const response = await api.post("/api/recipes", { body: dataToSend });
       return response;
     } catch (error) {
       console.error("Error creating recipe:", error);
@@ -93,8 +98,13 @@ export const recipesAPI = {
   // Update recipe
   updateRecipe: async (id, recipeData) => {
     try {
+      // Include walletAddress if provided (from MetaMask)
+      const dataToSend = {
+        ...recipeData,
+        walletAddress: recipeData.walletAddress || null,
+      };
       const response = await api.put(`/api/recipes/${id}`, {
-        body: recipeData,
+        body: dataToSend,
       });
       return response;
     } catch (error) {

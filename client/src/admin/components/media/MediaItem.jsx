@@ -9,6 +9,7 @@ export default function MediaItem({
   onSelectToggle,
   onUpdate,
   view,
+  onPreview,
 }) {
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({
@@ -41,83 +42,7 @@ export default function MediaItem({
 
   const clsSelected = selected ? "ring-2 ring-lime-400 ring-offset-2" : "";
 
-  if (view === "list") {
-    return (
-      <tr
-        className={`border-b border-emerald-900/10 hover:bg-emerald-50/60 ${
-          selected ? "bg-emerald-50" : ""
-        }`}
-      >
-        <td className="px-3 py-2 w-8">
-          <input
-            type="checkbox"
-            className="accent-lime-400"
-            checked={selected}
-            onChange={() => onSelectToggle(item.id || item._id)}
-            aria-label={`Select ${item.filename}`}
-          />
-        </td>
-        <td className="px-3 py-2">
-          <div className="w-14 h-14 rounded-lg overflow-hidden bg-emerald-900/10 flex items-center justify-center text-[10px] text-emerald-700">
-            {item.type === "image" ? (
-              <img
-                src={item.url}
-                alt={item.alt}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              "VID"
-            )}
-          </div>
-        </td>
-        <td className="px-3 py-2 text-sm text-emerald-900/90">
-          {item.filename}
-        </td>
-        <td className="px-3 py-2 text-xs text-emerald-800/70 max-w-[240px]">
-          {editing ? (
-            <input
-              type="text"
-              value={editData.alt}
-              onChange={(e) =>
-                setEditData({ ...editData, alt: e.target.value })
-              }
-              className="w-full px-2 py-1 text-xs border border-emerald-200 rounded"
-              placeholder="Alt text..."
-            />
-          ) : (
-            <div className="truncate" title={item.alt}>
-              {item.alt || "—"}
-            </div>
-          )}
-        </td>
-        <td className="px-3 py-2 text-xs text-emerald-800/60">
-          {editing ? (
-            <div className="flex gap-1">
-              <button
-                onClick={handleSave}
-                className="px-2 py-1 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-500"
-              >
-                Lưu
-              </button>
-              <button
-                onClick={handleCancel}
-                className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-400"
-              >
-                Hủy
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setEditing(true)}
-              className="px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200"
-            >
-              Sửa
-            </button>
-          )}
-        </td>
-      </tr>
-    );
-  }
+  // Removed list view
 
   // Grid view
   return (
@@ -145,16 +70,25 @@ export default function MediaItem({
         </button>
       </div>
 
-      {/* Image */}
-      <div className="aspect-video w-full bg-emerald-900/5 flex items-center justify-center text-[10px] text-emerald-700">
-        {item.type === "image" ? (
+      {/* Media preview (click to open) */}
+      <div
+        className="aspect-video w-full bg-emerald-900/5 flex items-center justify-center text-[10px] text-emerald-700 cursor-pointer"
+        onClick={() => onPreview && onPreview(item)}
+        title={item.originalName}
+      >
+        {item.type === "image" || item.type === "video" ? (
           <img
-            src={item.url}
-            alt={item.alt}
+            src={item.thumbnailUrl || item.url}
+            alt={item.alt || item.originalName}
             className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+              e.currentTarget.parentElement.textContent =
+                item.type === "video" ? "VIDEO" : "IMG";
+            }}
           />
         ) : (
-          <span className="text-xs font-medium">VIDEO</span>
+          <span className="text-xs font-medium">MEDIA</span>
         )}
       </div>
 

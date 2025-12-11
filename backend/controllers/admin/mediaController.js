@@ -143,13 +143,15 @@ export const confirm = async (req, res, next) => {
       return next(err);
     }
 
+    const fileUrl = url || getS3Url(key);
+
     const mediaData = {
       filename,
       originalName: filename,
       mimeType,
       size: 0, // We don't have size info from S3 presigned upload
       type,
-      url,
+      url: fileUrl,
       storageType: "s3",
       storageKey: key,
       alt: alt || "",

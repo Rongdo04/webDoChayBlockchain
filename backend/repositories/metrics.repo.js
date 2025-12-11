@@ -3,6 +3,7 @@ import Recipe from "../models/Recipe.js";
 import User from "../models/User.js";
 import Comment from "../models/Comment.js";
 import AuditLog from "../models/AuditLog.js";
+import ViewLog from "../models/ViewLog.js";
 
 /**
  * Get overview metrics for admin dashboard
@@ -19,10 +20,11 @@ export async function getOverviewMetrics() {
     const [totalRecipes, pendingReviews, newComments7d, totalUsers] =
       await Promise.all([
         Recipe.countDocuments(),
-        Recipe.countDocuments({ status: "draft" }),
+        // Count recipes waiting for review (pending status - user đã gửi, chờ admin duyệt)
+        Recipe.countDocuments({ status: "pending" }),
+        // Count all new comments in the last 7 days (not just pending)
         Comment.countDocuments({
           createdAt: { $gte: sevenDaysAgo },
-          status: "pending",
         }),
         User.countDocuments(),
       ]);
@@ -68,18 +70,27 @@ async function generateTimeseriesData(startDate, endDate) {
         const nextDay = new Date(date);
         nextDay.setDate(nextDay.getDate() + 1);
 
-        const [recipeCount, commentCount] = await Promise.all([
+        const [recipeCount, commentCount, viewCount] = await Promise.all([
           Recipe.countDocuments({
             createdAt: { $gte: date, $lt: nextDay },
           }),
           Comment.countDocuments({
             createdAt: { $gte: date, $lt: nextDay },
           }),
+          // Count views from ViewLog for this date
+          ViewLog.countDocuments({
+            viewedAt: { $gte: date, $lt: nextDay },
+          }),
         ]);
 
+        const dateStr = date.toISOString().split("T")[0];
+        console.log(
+          `📊 Metrics for ${dateStr}: views=${viewCount}, recipes=${recipeCount}, comments=${commentCount}`
+        );
+
         return {
-          date: date.toISOString().split("T")[0], // YYYY-MM-DD format
-          views: Math.floor(Math.random() * 1000) + 100, // Mock views data
+          date: dateStr, // YYYY-MM-DD format
+          views: viewCount, // Real views data from ViewLog
           recipes: recipeCount,
           comments: commentCount,
         };
@@ -96,11 +107,18 @@ async function generateTimeseriesData(startDate, endDate) {
 /**
  * Get recent activity feed from audit logs
  * @param {number} limit - Number of activities to return
+ * @param {number} days - Number of days to look back (default: 7)
  * @returns {Promise<Array>} Array of recent activities
  */
-export async function getRecentActivity(limit = 20) {
+export async function getRecentActivity(limit = 20, days = 7) {
   try {
-    const activities = await AuditLog.find()
+    // Calculate date threshold
+    const daysAgo = new Date();
+    daysAgo.setDate(daysAgo.getDate() - days);
+
+    const activities = await AuditLog.find({
+      createdAt: { $gte: daysAgo },
+    })
       .populate("userId", "name email")
       .sort({ createdAt: -1 })
       .limit(limit)

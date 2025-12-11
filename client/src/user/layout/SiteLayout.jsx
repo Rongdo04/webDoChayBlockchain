@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuthAdapter } from "../../auth/useAuthAdapter.js";
+import settingsAPI from "../../services/settingsAPI";
 
 export default function SiteLayout({ children }) {
   const [mobileSearch, setMobileSearch] = useState(false);
@@ -11,6 +12,10 @@ export default function SiteLayout({ children }) {
     useAuthAdapter();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const [settings, setSettings] = useState({
+    brand: "RecipeHub",
+    siteDesc: "Nền tảng chia sẻ công thức & cộng đồng ẩm thực.",
+  });
 
   useEffect(() => {
     const handler = (e) => {
@@ -20,6 +25,27 @@ export default function SiteLayout({ children }) {
     if (menuOpen) document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [menuOpen]);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await settingsAPI.getPublicSettings();
+        if (response.success && response.data) {
+          setSettings({
+            brand: response.data.brand || "RecipeHub",
+            siteDesc:
+              response.data.siteDesc ||
+              "Nền tảng chia sẻ công thức & cộng đồng ẩm thực.",
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch settings:", error);
+        // Keep default values on error
+      }
+    };
+
+    fetchSettings();
+  }, []);
 
   const submitSearch = (e) => {
     e.preventDefault();
@@ -45,7 +71,7 @@ export default function SiteLayout({ children }) {
               R
             </div>
             <span className="font-semibold text-emerald-950 tracking-tight hidden sm:block">
-              RecipeHub
+              {settings.brand}
             </span>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
@@ -301,10 +327,10 @@ export default function SiteLayout({ children }) {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 grid gap-8 md:grid-cols-3 text-sm">
           <div className="space-y-2">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-900/70">
-              RecipeHub
+              {settings.brand}
             </h3>
             <p className="text-emerald-800/70 leading-snug">
-              Nền tảng chia sẻ công thức & cộng đồng ẩm thực.
+              {settings.siteDesc}
             </p>
           </div>
           <div className="space-y-2">
@@ -337,7 +363,8 @@ export default function SiteLayout({ children }) {
               Theo dõi
             </h3>
             <p className="text-emerald-800/70 text-xs">
-              © {new Date().getFullYear()} RecipeHub. All rights reserved.
+              © {new Date().getFullYear()} {settings.brand}. All rights
+              reserved.
             </p>
           </div>
         </div>

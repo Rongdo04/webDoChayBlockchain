@@ -50,13 +50,35 @@ export const submitReport = async (req, res) => {
       });
     }
 
+    // Normalize reason to satisfy enum; fall back to 'other' and keep original text in description
+    const allowedReasons = new Set([
+      "spam",
+      "abuse",
+      "inappropriate",
+      "misinformation",
+      "copyright",
+      "other",
+      "Spam",
+      "Nội dung không phù hợp",
+      "Ngôn từ tiêu cực",
+      "Thông tin sai lệch",
+      "Vi phạm bản quyền",
+      "Khác",
+    ]);
+
+    const isAllowed = allowedReasons.has(reason);
+    const finalReason = isAllowed ? reason : "other";
+    const finalDescription = isAllowed
+      ? description || ""
+      : `${description ? description + "\n" : ""}[Reason: ${reason}]`;
+
     // Create new report
     const report = new Report({
       reporterId,
       targetType,
       targetId,
-      reason,
-      description,
+      reason: finalReason,
+      description: finalDescription,
       status: "pending",
       createdAt: new Date(),
     });

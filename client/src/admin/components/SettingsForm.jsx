@@ -1,5 +1,5 @@
 /** SettingsForm with API Integration
- * Fields: siteTitle, siteDesc, brand, policy
+ * Fields: siteTitle, siteDesc, brand, policy, featuredVideo
  * API: GET/PUT /api/admin/settings
  * Features: Load from API, save to API, field validation from backend errors
  */
@@ -14,6 +14,7 @@ const defaultValues = {
   siteDesc: "",
   brand: "",
   policy: "",
+  featuredVideo: "",
 };
 
 export default function SettingsForm() {
@@ -254,6 +255,31 @@ export default function SettingsForm() {
                 />
                 {errors.policy && (
                   <p className="text-xs text-red-600 mt-1">{errors.policy}</p>
+                )}
+              </div>
+
+              {/* Featured Video */}
+              <div>
+                <label className="block text-xs font-semibold tracking-wide uppercase text-emerald-900/70 mb-1">
+                  {t("settings.featuredVideo", "Video nổi bật")}
+                </label>
+                <input
+                  type="url"
+                  value={values.featuredVideo}
+                  onChange={(e) => update("featuredVideo", e.target.value)}
+                  className={`w-full rounded-xl border border-emerald-900/15 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-400 ${
+                    errors.featuredVideo ? "border-red-500" : ""
+                  }`}
+                  placeholder={t(
+                    "settings.featuredVideo.placeholder",
+                    "URL video nổi bật (YouTube, Vimeo, etc.)"
+                  )}
+                  disabled={saving}
+                />
+                {errors.featuredVideo && (
+                  <p className="text-xs text-red-600 mt-1">
+                    {errors.featuredVideo}
+                  </p>
                 )}
               </div>
             </div>

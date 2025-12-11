@@ -20,6 +20,24 @@ export default function MediaGallery({ images = [], videoUrl }) {
   };
   const getKey = (img, i) => img?._id || img?.id || i;
 
+  // Detect video item from images
+  const isVideoItem = (item) => {
+    if (!item || typeof item === "string") return false;
+    if (item.type === "video") return true;
+    if (item.mimeType && String(item.mimeType).startsWith("video")) return true;
+    const src = getSrc(item) || "";
+    return /(\.mp4|\.webm|\.mov|\.avi)$/i.test(src);
+  };
+  const firstVideo = Array.isArray(images)
+    ? images.find((m) => isVideoItem(m))
+    : null;
+  const imageItems = Array.isArray(images)
+    ? images.filter((m) => !isVideoItem(m))
+    : [];
+  const resolvedVideoUrl = videoUrl || getSrc(firstVideo);
+  const resolvedVideoThumb =
+    firstVideo?.thumbnailUrl || firstVideo?.thumb || null;
+
   const open = (idx) => {
     prevActive.current = document.activeElement;
     setOpenIdx(idx);
@@ -41,22 +59,22 @@ export default function MediaGallery({ images = [], videoUrl }) {
         }
         if (e.key === "ArrowRight") {
           setOpenIdx((prev) => {
-            if (images.length === 0) return prev;
+            if (imageItems.length === 0) return prev;
             if (prev === "video") return 0;
             if (typeof prev === "number") {
               const next = prev + 1;
-              return next >= images.length ? 0 : next;
+              return next >= imageItems.length ? 0 : next;
             }
             return prev;
           });
         }
         if (e.key === "ArrowLeft") {
           setOpenIdx((prev) => {
-            if (images.length === 0) return prev;
-            if (prev === "video") return images.length - 1;
+            if (imageItems.length === 0) return prev;
+            if (prev === "video") return imageItems.length - 1;
             if (typeof prev === "number") {
               const next = prev - 1;
-              return next < 0 ? images.length - 1 : next;
+              return next < 0 ? imageItems.length - 1 : next;
             }
             return prev;
           });
@@ -65,7 +83,7 @@ export default function MediaGallery({ images = [], videoUrl }) {
       window.addEventListener("keydown", handleKey, true);
       return () => window.removeEventListener("keydown", handleKey, true);
     }
-  }, [openIdx, images.length]);
+  }, [openIdx, imageItems.length]);
 
   // Prevent body scroll when open
   useEffect(() => {
@@ -76,7 +94,7 @@ export default function MediaGallery({ images = [], videoUrl }) {
     }
   }, [openIdx]);
 
-  const mediaCount = images.length + (videoUrl ? 1 : 0);
+  const mediaCount = imageItems.length + (resolvedVideoUrl ? 1 : 0);
   if (mediaCount === 0) {
     return (
       <div className="rounded-xl border border-emerald-900/10 p-6 text-center text-sm text-emerald-800/60 bg-white shadow-sm">
@@ -95,16 +113,28 @@ export default function MediaGallery({ images = [], videoUrl }) {
       </h3>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        {videoUrl && (
+        {resolvedVideoUrl && (
           <button
             onClick={() => open("video")}
             className="relative group aspect-video rounded-xl overflow-hidden ring-1 ring-emerald-900/15 bg-emerald-950/5 focus:outline-none focus:ring-2 focus:ring-emerald-600"
             aria-label="Mở video"
           >
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="w-12 h-12 rounded-full bg-emerald-950/70 text-lime-300 flex items-center justify-center text-xs font-semibold shadow-inner group-hover:scale-105 transition">
-                ▶
-              </span>
+            <div className="absolute inset-0">
+              {resolvedVideoThumb ? (
+                <img
+                  src={resolvedVideoThumb}
+                  alt="Video thumbnail"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              ) : null}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="w-12 h-12 rounded-full bg-emerald-950/70 text-lime-300 flex items-center justify-center text-xs font-semibold shadow-inner group-hover:scale-105 transition">
+                  ▶
+                </span>
+              </div>
             </div>
             <div className="absolute bottom-1 left-1 bg-emerald-950/70 text-[10px] px-2 py-0.5 rounded text-lime-200 font-medium">
               VIDEO
@@ -112,7 +142,7 @@ export default function MediaGallery({ images = [], videoUrl }) {
           </button>
         )}
 
-        {images.map((img, i) => {
+        {imageItems.map((img, i) => {
           const src = getSrc(img);
           const alt = getAlt(img, i);
           const key = getKey(img, i);
@@ -170,19 +200,34 @@ export default function MediaGallery({ images = [], videoUrl }) {
 
             {openIdx === "video" ? (
               <div className="aspect-video bg-black">
-                <iframe
-                  src={videoUrl}
-                  title="Video công thức"
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+                {(() => {
+                  const src = resolvedVideoUrl;
+                  const isEmbed =
+                    typeof src === "string" &&
+                    /youtube|youtu\.be|vimeo/.test(src || "");
+                  return isEmbed ? (
+                    <iframe
+                      src={src}
+                      title="Video công thức"
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video
+                      src={src || ""}
+                      controls
+                      className="w-full h-full"
+                      preload="metadata"
+                    />
+                  );
+                })()}
               </div>
             ) : (
               <div className="relative">
                 {(() => {
-                  const src = getSrc(images[openIdx]);
-                  const alt = getAlt(images[openIdx], openIdx);
+                  const src = getSrc(imageItems[openIdx]);
+                  const alt = getAlt(imageItems[openIdx], openIdx);
                   return (
                     <div className="max-h-[80vh] w-full bg-emerald-950/40 flex items-center justify-center">
                       {src ? (
@@ -204,13 +249,13 @@ export default function MediaGallery({ images = [], videoUrl }) {
                   );
                 })()}
 
-                {images.length > 1 && (
+                {imageItems.length > 1 && (
                   <>
                     <button
                       onClick={() =>
                         setOpenIdx((prev) =>
                           typeof prev === "number"
-                            ? (prev - 1 + images.length) % images.length
+                            ? (prev - 1 + imageItems.length) % imageItems.length
                             : prev
                         )
                       }
@@ -223,7 +268,7 @@ export default function MediaGallery({ images = [], videoUrl }) {
                       onClick={() =>
                         setOpenIdx((prev) =>
                           typeof prev === "number"
-                            ? (prev + 1) % images.length
+                            ? (prev + 1) % imageItems.length
                             : prev
                         )
                       }
@@ -235,9 +280,9 @@ export default function MediaGallery({ images = [], videoUrl }) {
                   </>
                 )}
 
-                {images.length > 1 && (
+                {imageItems.length > 1 && (
                   <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
-                    {images.map((img, dotIdx) => (
+                    {imageItems.map((img, dotIdx) => (
                       <button
                         key={getKey(img, dotIdx)}
                         onClick={() => setOpenIdx(dotIdx)}

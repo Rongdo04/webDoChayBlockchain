@@ -3,6 +3,7 @@ import { Router } from "express";
 import { asyncHandler } from "../middleware/errorHandler.js";
 import { authenticate } from "../middleware/auth.js";
 import * as recipesRepo from "../repositories/recipes.repo.js";
+import Taxonomy from "../models/Taxonomy.js";
 import * as commentsRepo from "../repositories/comments.repo.js";
 
 const router = Router();
@@ -20,15 +21,33 @@ router.get(
       difficulty,
       dietType,
       tags,
+      author,
     } = req.query;
 
-    const filters = {
-      status: "published", // Only published recipes for public API
-    };
+    const filters = {};
 
-    // Add category filter
+    // If filtering by author, show all statuses; otherwise only published
+    if (author) {
+      // Show all statuses when filtering by author (for user's own recipes)
+    } else {
+      filters.status = "published"; // Only published recipes for public API
+    }
+
+    // Add category filter - accept slug/name or legacy id-string
     if (category) {
-      filters.category = category;
+      const categoriesToMatch = [String(category)];
+      // If not an ObjectId-looking string, try to resolve by slug/name to id-string
+      const isObjectIdLike = /^[a-fA-F0-9]{24}$/.test(String(category));
+      if (!isObjectIdLike) {
+        const catDoc = await Taxonomy.findOne({
+          type: "category",
+          $or: [{ slug: String(category) }, { name: String(category) }],
+        }).select("_id");
+        if (catDoc) categoriesToMatch.push(String(catDoc._id));
+        filters.category = { $in: categoriesToMatch };
+      } else {
+        filters.category = String(category);
+      }
     }
 
     // Add search filter
@@ -43,6 +62,7 @@ router.get(
     // Add other filters
     if (difficulty) filters.difficulty = difficulty;
     if (dietType) filters.dietType = dietType;
+    if (author) filters.authorId = author;
     if (tags) {
       const tagArray = Array.isArray(tags) ? tags : [tags];
       filters.tasteTags = { $in: tagArray };
@@ -78,15 +98,66 @@ router.get(
         },
         {
           path: "images",
-          select: "url alt originalName filename",
+          select: "url alt originalName filename thumbnailUrl",
         },
       ],
     };
 
     const result = await recipesRepo.findWithPagination(filters, options);
 
+    // Normalize category/tags values in response (avoid exposing raw ids)
+    const docs = result.docs || [];
+    const categoryIds = new Set();
+    const tagIds = new Set();
+    docs.forEach((doc) => {
+      const r = doc.toObject ? doc.toObject() : doc;
+      if (r.category && /^[a-fA-F0-9]{24}$/.test(String(r.category))) {
+        categoryIds.add(String(r.category));
+      }
+      if (Array.isArray(r.tags)) {
+        r.tags.forEach((t) => {
+          if (t && /^[a-fA-F0-9]{24}$/.test(String(t))) tagIds.add(String(t));
+        });
+      }
+    });
+
+    const [catDocs, tagDocs] = await Promise.all([
+      categoryIds.size
+        ? Taxonomy.find({
+            _id: { $in: Array.from(categoryIds) },
+            type: "category",
+          }).select("_id slug name")
+        : Promise.resolve([]),
+      tagIds.size
+        ? Taxonomy.find({
+            _id: { $in: Array.from(tagIds) },
+            type: "tag",
+          }).select("_id slug name")
+        : Promise.resolve([]),
+    ]);
+
+    const catMap = new Map(
+      catDocs.map((c) => [String(c._id), c.slug || c.name])
+    );
+    const tagMap = new Map(
+      tagDocs.map((t) => [String(t._id), t.slug || t.name])
+    );
+
+    const normalized = docs.map((doc) => {
+      const r = doc.toObject ? doc.toObject() : doc;
+      if (r.category && catMap.has(String(r.category))) {
+        r.category = catMap.get(String(r.category));
+      }
+      if (Array.isArray(r.tags) && tagMap.size) {
+        r.tags = r.tags.map((t) =>
+          tagMap.has(String(t)) ? tagMap.get(String(t)) : t
+        );
+      }
+      return r;
+    });
+
     res.json({
-      data: result.docs,
+      data: normalized,
       pagination: {
         page: result.page,
         limit: result.limit,
@@ -105,7 +176,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const recipe = await recipesRepo.findById(id, {
+    let recipe = await recipesRepo.findById(id, {
       populate: [
         {
           path: "authorId",
@@ -113,7 +184,7 @@ router.get(
         },
         {
           path: "images",
-          select: "url alt originalName filename",
+          select: "url alt originalName filename thumbnailUrl",
         },
       ],
     });
@@ -128,9 +199,34 @@ router.get(
     }
 
     // Increment view count
-    await recipesRepo.incrementViews(id);
+    await recipesRepo.incrementViews(id, req);
 
-    res.json({ data: recipe });
+    // Normalize category/tags
+    const obj = recipe.toObject ? recipe.toObject() : recipe;
+    if (obj.category && /^[a-fA-F0-9]{24}$/.test(String(obj.category))) {
+      const catDoc = await Taxonomy.findOne({
+        _id: obj.category,
+        type: "category",
+      }).select("slug name");
+      if (catDoc) obj.category = catDoc.slug || catDoc.name;
+    }
+    if (Array.isArray(obj.tags)) {
+      const ids = obj.tags.filter((t) => /^[a-fA-F0-9]{24}$/.test(String(t)));
+      if (ids.length) {
+        const tagDocs = await Taxonomy.find({
+          _id: { $in: ids },
+          type: "tag",
+        }).select("_id slug name");
+        const tmap = new Map(
+          tagDocs.map((t) => [String(t._id), t.slug || t.name])
+        );
+        obj.tags = obj.tags.map((t) =>
+          tmap.has(String(t)) ? tmap.get(String(t)) : t
+        );
+      }
+    }
+
+    res.json({ data: obj });
   })
 );
 
@@ -140,7 +236,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const { slug } = req.params;
 
-    const recipe = await recipesRepo.findOne(
+    let recipe = await recipesRepo.findOne(
       { slug, status: "published" },
       {
         populate: [
@@ -150,7 +246,7 @@ router.get(
           },
           {
             path: "images",
-            select: "url alt originalName filename",
+            select: "url alt originalName filename thumbnailUrl",
           },
         ],
       }
@@ -166,9 +262,34 @@ router.get(
     }
 
     // Increment view count
-    await recipesRepo.incrementViews(recipe._id);
+    await recipesRepo.incrementViews(recipe._id, req);
 
-    res.json({ data: recipe });
+    // Normalize category/tags
+    const obj = recipe.toObject ? recipe.toObject() : recipe;
+    if (obj.category && /^[a-fA-F0-9]{24}$/.test(String(obj.category))) {
+      const catDoc = await Taxonomy.findOne({
+        _id: obj.category,
+        type: "category",
+      }).select("slug name");
+      if (catDoc) obj.category = catDoc.slug || catDoc.name;
+    }
+    if (Array.isArray(obj.tags)) {
+      const ids = obj.tags.filter((t) => /^[a-fA-F0-9]{24}$/.test(String(t)));
+      if (ids.length) {
+        const tagDocs = await Taxonomy.find({
+          _id: { $in: ids },
+          type: "tag",
+        }).select("_id slug name");
+        const tmap = new Map(
+          tagDocs.map((t) => [String(t._id), t.slug || t.name])
+        );
+        obj.tags = obj.tags.map((t) =>
+          tmap.has(String(t)) ? tmap.get(String(t)) : t
+        );
+      }
+    }
+
+    res.json({ data: obj });
   })
 );
 
@@ -309,6 +430,7 @@ router.post(
         category,
         images,
         videoUrl,
+        walletAddress, // Blockchain wallet address from MetaMask
       } = req.body;
 
       // Validate required fields - support both new and old formats
@@ -367,8 +489,9 @@ router.post(
         category: category || "main",
         images: Array.isArray(images) ? images : [],
         videoUrl: videoUrl || "",
+        walletAddress: walletAddress || null, // Include wallet address for blockchain
         userId: req.user.id,
-        status: "draft", // Set to draft instead of review for user submissions
+        status: "pending", // User submissions are pending review
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -395,6 +518,50 @@ router.post(
         },
       });
     }
+  })
+);
+
+// DELETE /api/recipes/:id - Delete a recipe (only by author)
+router.delete(
+  "/:id",
+  authenticate,
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    // Find recipe and check ownership
+    const recipe = await recipesRepo.findById(id);
+    if (!recipe) {
+      return res.status(404).json({
+        error: {
+          code: "NOT_FOUND",
+          message: "Không tìm thấy công thức",
+        },
+      });
+    }
+
+    // Check if user is the author
+    if (recipe.authorId.toString() !== userId.toString()) {
+      return res.status(403).json({
+        error: {
+          code: "FORBIDDEN",
+          message: "Bạn không có quyền xóa công thức này",
+        },
+      });
+    }
+
+    // Delete the recipe
+    const deleted = await recipesRepo.deleteRecipe(id, req.user, req);
+    if (!deleted) {
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Lỗi khi xóa công thức",
+        },
+      });
+    }
+
+    res.status(204).end();
   })
 );
 

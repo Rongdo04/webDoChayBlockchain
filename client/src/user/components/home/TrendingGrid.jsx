@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { recipesAPI } from "../../../services/recipesAPI.js";
-
+import { FaStar } from "react-icons/fa";
 function CardSkeleton() {
   return (
     <div className="animate-pulse rounded-2xl overflow-hidden bg-white border border-emerald-900/10 p-4 space-y-3">
@@ -160,7 +160,7 @@ export default function TrendingGrid({ limit = 8 }) {
                       aria-label="Đánh giá trung bình"
                       title={`${recipe.ratingCount || 0} lượt đánh giá`}
                     >
-                      ★{" "}
+                      <FaStar className="inline mr-1" />{" "}
                       {(() => {
                         const rating = recipe.ratingAvg || 0;
                         return rating > 0 ? rating.toFixed(1) : "0.0";

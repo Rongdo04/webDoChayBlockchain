@@ -1,11 +1,12 @@
 /**
  * EmptyError component with 2 variants: 'empty' | 'error'
- * Props: { variant, title, message, actionLabel, onAction }
+ * Props: { variant, title, message, actionLabel, onAction, error }
  * Story:
  *  <EmptyError variant="empty" title="No Results" message="Try adjusting filters" />
  *  <EmptyError variant="error" title="Error" message="Something went wrong" actionLabel="Retry" onAction={()=>{}} />
  */
 import React from "react";
+import { getErrorMessage } from "../../lib/errorMapping.js";
 
 const variantStyle = {
   empty: "from-emerald-950 via-emerald-900 to-lime-900",
@@ -18,7 +19,48 @@ export default function EmptyError({
   message,
   actionLabel,
   onAction,
+  error, // New prop to pass error object
 }) {
+  // Process message based on variant and error
+  const processedMessage = React.useMemo(() => {
+    if (message) return message;
+
+    if (variant === "error" && error) {
+      return getErrorMessage(error);
+    }
+
+    if (variant === "empty") {
+      return "Không có dữ liệu để hiển thị.";
+    }
+
+    return "Đã xảy ra lỗi không xác định.";
+  }, [message, variant, error]);
+
+  // Process title based on variant
+  const processedTitle = React.useMemo(() => {
+    if (title) return title;
+
+    if (variant === "empty") {
+      return "Không có dữ liệu";
+    }
+
+    if (variant === "error") {
+      return "Đã xảy ra lỗi";
+    }
+
+    return title;
+  }, [title, variant]);
+
+  // Process action label
+  const processedActionLabel = React.useMemo(() => {
+    if (actionLabel) return actionLabel;
+
+    if (variant === "error") {
+      return "Thử lại";
+    }
+
+    return actionLabel;
+  }, [actionLabel, variant]);
   return (
     <div className="text-center py-14 px-4">
       <div
@@ -61,17 +103,19 @@ export default function EmptyError({
           </svg>
         )}
       </div>
-      {title && (
-        <h3 className="text-lg font-semibold text-emerald-900 mb-2">{title}</h3>
+      {processedTitle && (
+        <h3 className="text-lg font-semibold text-emerald-900 mb-2">
+          {processedTitle}
+        </h3>
       )}
-      {message && (
+      {processedMessage && (
         <p className="text-sm text-emerald-800/80 max-w-md mx-auto mb-6">
-          {message}
+          {processedMessage}
         </p>
       )}
-      {actionLabel && (
+      {processedActionLabel && (
         <button onClick={() => onAction && onAction()} className="btn-brand">
-          {actionLabel}
+          {processedActionLabel}
         </button>
       )}
     </div>

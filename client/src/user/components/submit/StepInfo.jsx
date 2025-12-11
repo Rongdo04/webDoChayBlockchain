@@ -92,12 +92,25 @@ export default function StepInfo({ data, onChange, errors }) {
         const categoryItems = Array.isArray(categoryData)
           ? categoryData
           : categoryData.items || [];
-        setCategories(categoryItems);
+        // Normalize to have both _id and id
+        setCategories(
+          categoryItems.map((c) => ({
+            ...c,
+            _id: c._id || c.id,
+            id: c.id || c._id,
+          }))
+        );
 
         // Handle tags - expect array or object with data property
         const tagData = tagsResponse?.data || tagsResponse || [];
         const tagItems = Array.isArray(tagData) ? tagData : tagData.items || [];
-        setTags(tagItems);
+        setTags(
+          tagItems.map((t) => ({ ...t, _id: t._id || t.id, id: t.id || t._id }))
+        );
+        console.log(
+          "[SubmitRecipe] Loaded tags:",
+          tagItems.map((t) => ({ id: t._id || t.id, name: t.name }))
+        );
       } catch (error) {
         console.error("Failed to load taxonomy:", error);
         // Fallback to hardcoded values
@@ -107,13 +120,8 @@ export default function StepInfo({ data, onChange, errors }) {
           { _id: "trang-mieng", name: "Tráng miệng" },
           { _id: "nuoc-uong", name: "Nước uống" },
         ]);
-        setTags([
-          { _id: "thanh-dam", name: "Thanh đạm" },
-          { _id: "dam-da", name: "Đậm đà" },
-          { _id: "cay-nhe", name: "Cay nhẹ" },
-          { _id: "beo-ngay", name: "Béo ngậy" },
-          { _id: "thanh-mat", name: "Thanh mát" },
-        ]);
+        // If API fails, leave empty to avoid mismatch with server IDs
+        setTags([]);
       } finally {
         setLoadingTaxonomy(false);
       }
@@ -144,6 +152,9 @@ export default function StepInfo({ data, onChange, errors }) {
     },
     [data, onChange, existingSlugs]
   );
+
+  // Helper: get id from either _id or id
+  const getId = useCallback((obj) => obj?._id || obj?.id || "", []);
 
   return (
     <div className="space-y-6">
@@ -215,7 +226,7 @@ export default function StepInfo({ data, onChange, errors }) {
                 {loadingTaxonomy ? "Đang tải..." : "-- Chọn --"}
               </option>
               {categories.map((category) => (
-                <option key={category._id} value={category._id}>
+                <option key={getId(category)} value={getId(category)}>
                   {category.name}
                 </option>
               ))}
@@ -274,11 +285,17 @@ export default function StepInfo({ data, onChange, errors }) {
       </Section>
       <Section title="Tags" desc="Chọn các tags mô tả món ăn.">
         <div className="space-y-2">
+          {console.log(
+            "[SubmitRecipe] Selected tags: ",
+            data.tags,
+            " | Available:",
+            tags.map((t) => getId(t))
+          )}
           {/* Selected tags display */}
           {Array.isArray(data.tags) && data.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
               {data.tags.map((tagId, index) => {
-                const tag = tags.find((t) => t._id === tagId);
+                const tag = tags.find((t) => getId(t) === tagId);
                 return (
                   <span
                     key={tagId || index}
@@ -288,12 +305,18 @@ export default function StepInfo({ data, onChange, errors }) {
                     <button
                       type="button"
                       onClick={() => {
-                        const newTags = data.tags.filter((_, i) => i !== index);
-                        const newTasteTags = data.tasteTags.filter(
+                        const newTags = (data.tags || []).filter(
                           (_, i) => i !== index
                         );
-                        update("tags", newTags);
-                        update("tasteTags", newTasteTags); // Keep backward compatibility
+                        const newTasteTags = (data.tasteTags || []).filter(
+                          (_, i) => i !== index
+                        );
+                        console.log("[SubmitRecipe] Removing tag:", tagId);
+                        onChange({
+                          ...data,
+                          tags: newTags,
+                          tasteTags: newTasteTags,
+                        });
                       }}
                       className="ml-1 text-emerald-600 hover:text-emerald-800"
                     >
@@ -308,14 +331,23 @@ export default function StepInfo({ data, onChange, errors }) {
           {/* Tag selection */}
           <select
             onChange={(e) => {
+              console.log("[SubmitRecipe] Tag select changed:", e.target.value);
               if (e.target.value && !data.tags.includes(e.target.value)) {
+                console.log(
+                  "[SubmitRecipe] Adding tag to draft:",
+                  e.target.value
+                );
                 const newTags = [...(data.tags || []), e.target.value];
                 const newTasteTags = [
                   ...(data.tasteTags || []),
                   e.target.value,
                 ];
-                update("tags", newTags);
-                update("tasteTags", newTasteTags); // Keep backward compatibility
+                onChange({ ...data, tags: newTags, tasteTags: newTasteTags });
+              } else {
+                console.log(
+                  "[SubmitRecipe] Tag not added (empty or duplicate):",
+                  e.target.value
+                );
               }
               e.target.value = "";
             }}
@@ -326,9 +358,9 @@ export default function StepInfo({ data, onChange, errors }) {
               {loadingTaxonomy ? "Đang tải..." : "Thêm tag"}
             </option>
             {tags
-              .filter((tag) => !data.tags || !data.tags.includes(tag._id))
+              .filter((tag) => !data.tags || !data.tags.includes(getId(tag)))
               .map((tag) => (
-                <option key={tag._id} value={tag._id}>
+                <option key={getId(tag)} value={getId(tag)}>
                   {tag.name}
                 </option>
               ))}

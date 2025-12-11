@@ -20,12 +20,13 @@ export default function MediaLibrary() {
   const adminApi = useAdminApi();
 
   // UI State
-  const [view, setView] = useState("grid");
+  // Grid-only view
   const [typeFilter, setTypeFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState([]);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [preview, setPreview] = useState({ open: false, item: null });
 
   // Data State
   const [data, setData] = useState([]);
@@ -199,21 +200,7 @@ export default function MediaLibrary() {
           {t("media.library")}
         </h2>
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex rounded-xl overflow-hidden border border-emerald-900/15 bg-white">
-            {["grid", "list"].map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`px-3 py-2 text-xs font-medium ${
-                  view === v
-                    ? "bg-gradient-to-br from-emerald-950 via-emerald-900 to-lime-900 text-white"
-                    : "text-emerald-800 hover:bg-emerald-900/10"
-                }`}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
+          {/* Grid-only; removed list toggle */}
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
@@ -258,10 +245,10 @@ export default function MediaLibrary() {
         <>
           <MediaGrid
             items={list}
-            view={view}
             selectedIds={selected}
             onSelectToggle={toggleSelect}
             onUpdateMedia={handleUpdateMedia}
+            onPreview={(it) => setPreview({ open: true, item: it })}
           />
 
           {/* Load More Button */}
@@ -318,6 +305,48 @@ export default function MediaLibrary() {
         confirmLabel={t("actions.delete")}
         danger
       />
+
+      {/* Preview Modal */}
+      {preview.open && preview.item && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl max-h-[85vh] overflow-hidden m-4">
+            <div className="p-3 border-b border-emerald-900/15 flex items-center justify-between">
+              <div className="text-sm font-medium text-emerald-900 truncate pr-3">
+                {preview.item.originalName || preview.item.filename}
+              </div>
+              <button
+                onClick={() => setPreview({ open: false, item: null })}
+                className="px-3 py-1.5 rounded-lg text-sm bg-white border border-emerald-900/15 hover:bg-emerald-50"
+              >
+                Đóng
+              </button>
+            </div>
+            <div className="bg-black flex items-center justify-center">
+              {preview.item.type === "video" ? (
+                <video
+                  controls
+                  className="w-full max-h-[80vh]"
+                  poster={preview.item.thumbnailUrl || undefined}
+                >
+                  <source src={preview.item.url} type={preview.item.mimeType} />
+                  Trình duyệt không hỗ trợ video.
+                </video>
+              ) : (
+                <img
+                  src={preview.item.url}
+                  alt={preview.item.alt || preview.item.originalName}
+                  className="w-full h-auto max-h-[80vh] object-contain bg-black"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                    e.currentTarget.parentElement.textContent =
+                      "Không thể tải ảnh";
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast */}
       <Toast

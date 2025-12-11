@@ -30,14 +30,6 @@ const categories = [
     isActive: true,
   },
   {
-    name: "Đồ uống",
-    type: "category",
-    slug: "do-uong",
-    description: "Các loại đồ uống và nước giải khát",
-    usageCount: 15,
-    isActive: true,
-  },
-  {
     name: "Món nướng",
     type: "category",
     slug: "mon-nuong",
@@ -45,24 +37,32 @@ const categories = [
     usageCount: 18,
     isActive: true,
   },
+  {
+    name: "Đồ uống",
+    type: "category",
+    slug: "do-uong",
+    description: "Các loại đồ uống và nước giải khát",
+    usageCount: 10,
+    isActive: true,
+  },
 ];
 
 // Sample tags data
 const tags = [
-  {
-    name: "healthy",
-    type: "tag",
-    slug: "healthy",
-    description: "Món ăn tốt cho sức khỏe",
-    usageCount: 22,
-    isActive: true,
-  },
   {
     name: "vegetarian",
     type: "tag",
     slug: "vegetarian",
     description: "Món ăn chay",
     usageCount: 16,
+    isActive: true,
+  },
+  {
+    name: "healthy",
+    type: "tag",
+    slug: "healthy",
+    description: "Món ăn tốt cho sức khỏe",
+    usageCount: 22,
     isActive: true,
   },
   {

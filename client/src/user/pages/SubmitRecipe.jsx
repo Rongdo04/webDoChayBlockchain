@@ -185,7 +185,7 @@ export default function SubmitRecipe() {
     });
   };
 
-  const submit = async () => {
+  const submit = async (walletAddress = null) => {
     const v = validate(draft);
     setErrors(v);
     if (Object.keys(v).length) {
@@ -206,14 +206,17 @@ export default function SubmitRecipe() {
       if (draft.images && draft.images.length > 0) {
         // Separate uploaded images from base64 images
         const uploadedImages = draft.images.filter(
-          (img) => typeof img === "object" && img.type === "uploaded" && img.id
+          (img) =>
+            typeof img === "object" &&
+            img.type === "uploaded" &&
+            (img.id || img._id)
         );
         const base64Images = draft.images.filter(
           (img) => typeof img === "string" && img.startsWith("data:image/")
         );
 
         // Add already uploaded image IDs
-        finalImageIds = uploadedImages.map((img) => img.id);
+        finalImageIds = uploadedImages.map((img) => img.id || img._id);
 
         // Upload remaining base64 images if any
         if (base64Images.length > 0) {
@@ -256,6 +259,7 @@ export default function SubmitRecipe() {
         category: draft.category,
         images: finalImageIds, // Use final combined image IDs
         status: "draft", // Set to draft for user submissions
+        walletAddress: walletAddress || null, // Include wallet address from MetaMask
 
         // Keep backward compatibility fields
         description: draft.description,

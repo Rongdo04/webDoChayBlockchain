@@ -31,6 +31,8 @@ const ALLOWED_VIDEO_MIMES = [
   "video/webm",
   "video/mov",
   "video/avi",
+  "video/quicktime", // .mov on some systems
+  "video/x-msvideo", // .avi on some systems
 ];
 const ALLOWED_MIMES = [...ALLOWED_IMAGE_MIMES, ...ALLOWED_VIDEO_MIMES];
 
@@ -118,12 +120,17 @@ export async function deleteLocalFile(storageKey) {
     const filepath = path.join(UPLOAD_DIR, storageKey);
     await fs.unlink(filepath);
 
-    // Also delete thumbnail if exists
-    const thumbnailPath = path.join(THUMBNAIL_DIR, `thumb_${storageKey}`);
-    try {
-      await fs.unlink(thumbnailPath);
-    } catch (e) {
-      // Thumbnail might not exist, ignore
+    // Also delete thumbnail if exists (image: thumb_<filename>, video: thumb_<name>.jpg)
+    const candidates = [
+      path.join(THUMBNAIL_DIR, `thumb_${storageKey}`),
+      path.join(THUMBNAIL_DIR, `thumb_${path.parse(storageKey).name}.jpg`),
+    ];
+    for (const thumbPath of candidates) {
+      try {
+        await fs.unlink(thumbPath);
+      } catch (_) {
+        // ignore
+      }
     }
 
     return true;

@@ -1,6 +1,6 @@
 /**
  * StatusPill
- * status: draft | review | published | rejected
+ * status: draft | pending | review | published | rejected
  * Props: { status, minimal? }
  * Story:
  *  <StatusPill status="published" />
@@ -9,15 +9,17 @@ import React from "react";
 import { t } from "../../i18n/index.js"; // added
 
 const map = {
-  draft: "bg-neutral-200 text-neutral-700 border-neutral-300",
-  review: "bg-amber-200/70 text-amber-900 border-amber-300",
+  draft: "bg-gray-200 text-gray-700 border-gray-300", // Màu xám cho nháp
+  pending: "bg-yellow-200/70 text-yellow-900 border-yellow-300", // Nền vàng cho chờ duyệt
+  review: "bg-yellow-200/70 text-yellow-900 border-yellow-300", // Nền vàng cho chờ duyệt (alias)
   published: "bg-emerald-200/70 text-emerald-900 border-emerald-300",
   rejected: "bg-rose-200/70 text-rose-900 border-rose-300",
 };
 
 const dotMap = {
-  draft: "bg-neutral-500",
-  review: "bg-amber-500",
+  draft: "bg-gray-500",
+  pending: "bg-yellow-500",
+  review: "bg-yellow-500",
   published: "bg-emerald-600",
   rejected: "bg-rose-600",
 };

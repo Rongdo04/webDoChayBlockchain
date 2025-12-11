@@ -6,6 +6,7 @@ import {
   validateListReports,
   validateReportId,
   validateResolveReport,
+  validateUpdateStatus,
 } from "../../validators/admin/reports.validator.js";
 
 const router = Router();
@@ -29,6 +30,21 @@ router.post(
   validateReportId,
   validateResolveReport,
   asyncHandler(reportsController.resolveReport)
+);
+
+// PUT /api/admin/reports/:id/status - Update report status
+router.put(
+  "/:id/status",
+  validateReportId,
+  validateUpdateStatus,
+  asyncHandler(reportsController.updateReportStatus)
+);
+
+// DELETE /api/admin/reports/:id - Delete a report
+router.delete(
+  "/:id",
+  validateReportId,
+  asyncHandler(reportsController.deleteReport)
 );
 
 export default router;

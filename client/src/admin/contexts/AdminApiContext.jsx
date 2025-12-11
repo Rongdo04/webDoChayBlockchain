@@ -270,6 +270,34 @@ export function AdminApiProvider({ children }) {
     ),
 
     getReportsStats: useCallback(() => api.get("/api/admin/reports/stats"), []),
+
+    // Posts management
+    getPosts: useCallback(
+      (params = {}) => api.get("/api/admin/posts", { params }),
+      []
+    ),
+
+    getPostsStats: useCallback(() => api.get("/api/admin/posts/stats"), []),
+
+    getPostById: useCallback((id) => api.get(`/api/admin/posts/${id}`), []),
+
+    updatePostStatus: useCallback(
+      (id, status, moderationNote = "") =>
+        api.put(`/api/admin/posts/${id}/status`, {
+          body: { status, moderationNote },
+        }),
+      []
+    ),
+
+    moderatePost: useCallback(
+      (id, action, note = "") =>
+        api.post(`/api/admin/posts/${id}/moderate`, {
+          body: { action, note },
+        }),
+      []
+    ),
+
+    deletePost: useCallback((id) => api.delete(`/api/admin/posts/${id}`), []),
   };
 
   // Enhanced error handler for admin context

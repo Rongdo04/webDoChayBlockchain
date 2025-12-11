@@ -2,14 +2,20 @@
 // Mongoose-based repository for admin recipe management
 import Recipe from "../models/Recipe.js";
 import AuditLog from "../models/AuditLog.js";
+import { generateRecipeHash } from "../utils/hashUtils.js";
+import blockchainService from "../services/blockchainService.js";
 
 // Allowed statuses
 const STATUS = {
-  DRAFT: "draft",
+  DRAFT: "draft", // Nháp - user đang soạn, chưa gửi
+  PENDING: "pending", // Chờ duyệt - user đã gửi, đang chờ admin duyệt
   PUBLISHED: "published",
   REJECTED: "rejected",
   SCHEDULED: "scheduled", // future publish
 };
+
+// Export for use in validators
+export { STATUS as RecipeStatus };
 
 // Helper to generate unique slug (append -2, -3...)
 async function generateUniqueSlug(baseSlug) {
@@ -43,20 +49,36 @@ export async function createRecipe(data, authorId, user, req = null) {
   const baseSlug = data.slug ? slugify(data.slug) : slugify(data.title);
   const uniqueSlug = await generateUniqueSlug(baseSlug);
 
+  // Clean ingredients: remove _id fields that frontend might send (timestamp-based IDs)
+  const cleanIngredients = (data.ingredients || []).map((ing) => {
+    const { _id, ...ingredient } = ing;
+    return ingredient;
+  });
+
+  // Clean steps: remove _id fields that frontend might send (timestamp-based IDs)
+  const cleanSteps = (data.steps || []).map((step) => {
+    const { _id, ...stepData } = step;
+    return stepData;
+  });
+
+  // Use status from data if provided, otherwise default to DRAFT
+  // Admin can create as draft, user submissions should be pending
+  const recipeStatus = data.status || STATUS.DRAFT;
+
   const recipe = new Recipe({
     title: data.title,
     slug: uniqueSlug,
     summary: data.summary || "",
     content: data.content || "",
-    ingredients: data.ingredients || [],
-    steps: data.steps || [],
+    ingredients: cleanIngredients,
+    steps: cleanSteps,
     tags: data.tags || [],
     category: data.category || null,
     prepTime: data.prepTime || 0,
     cookTime: data.cookTime || 0,
     servings: data.servings || 0,
     images: data.images || [],
-    status: STATUS.DRAFT,
+    status: recipeStatus,
     publishAt: null,
     ratingAvg: 0,
     ratingCount: 0,
@@ -64,6 +86,109 @@ export async function createRecipe(data, authorId, user, req = null) {
   });
 
   const saved = await recipe.save();
+  
+  // Blockchain integration: Calculate hash and register on blockchain
+  try {
+    // Calculate recipe hash
+    const recipeHash = generateRecipeHash({
+      title: saved.title,
+      summary: saved.summary,
+      content: saved.content,
+      ingredients: saved.ingredients,
+      steps: saved.steps,
+      tags: saved.tags,
+      category: saved.category,
+      prepTime: saved.prepTime,
+      cookTime: saved.cookTime,
+      servings: saved.servings,
+    });
+
+    // Get wallet address from data (sent from frontend via MetaMask)
+    const authorWalletAddress = data.walletAddress || null;
+
+    // Register hash on blockchain if wallet address is provided
+    if (authorWalletAddress) {
+      console.log(`🔗 Attempting to register hash on blockchain: ${recipeHash.substring(0, 16)}...`);
+      console.log(`📊 Full recipe hash: ${recipeHash}`);
+      const blockchainResult = await blockchainService.registerRecipeHash(
+        recipeHash,
+        authorWalletAddress
+      );
+
+      console.log(`📋 Blockchain result:`, {
+        success: blockchainResult.success,
+        error: blockchainResult.error,
+        transactionHash: blockchainResult.transactionHash,
+        blockNumber: blockchainResult.blockNumber,
+      });
+
+      if (blockchainResult.success) {
+        // Update recipe with blockchain metadata
+        saved.blockchain = {
+          recipeHash: recipeHash,
+          authorWalletAddress: authorWalletAddress,
+          transactionHash: blockchainResult.transactionHash,
+          blockNumber: blockchainResult.blockNumber,
+          timestamp: blockchainResult.timestamp,
+          isVerified: true,
+        };
+        await saved.save();
+        console.log(`✅ Recipe hash registered on blockchain: ${recipeHash}`);
+      } else {
+        // Graceful degradation: Save hash but mark as not verified
+        // Detect reason for failure
+        let verificationReason = "blockchain_error";
+        const errorMsg = blockchainResult.error?.toLowerCase() || "";
+        
+        console.log("🔍 Checking error message for hash_already_exists:", {
+          errorMsg: errorMsg,
+          includesAlreadyRegistered: errorMsg.includes("already registered"),
+          includesRecipeHashAlready: errorMsg.includes("recipe hash already"),
+          includesHashAlreadyExists: errorMsg.includes("hash already exists"),
+          includesExecutionReverted: errorMsg.includes("execution reverted"),
+        });
+        
+        if (
+          errorMsg.includes("already registered") ||
+          errorMsg.includes("recipe hash already") ||
+          errorMsg.includes("hash already exists") ||
+          (errorMsg.includes("execution reverted") && errorMsg.includes("already")) ||
+          errorMsg.includes("already exists") ||
+          errorMsg.includes("duplicate") ||
+          errorMsg.includes("exists")
+        ) {
+          verificationReason = "hash_already_exists";
+          console.log("✅ Detected hash_already_exists");
+        } else {
+          console.log("❌ Not detected as hash_already_exists, using blockchain_error");
+        }
+
+        saved.blockchain = {
+          recipeHash: recipeHash,
+          authorWalletAddress: authorWalletAddress,
+          isVerified: false,
+          verificationReason: verificationReason,
+        };
+        await saved.save();
+        console.warn(`⚠️ Failed to register recipe hash on blockchain: ${blockchainResult.error}`);
+        console.warn(`⚠️ Verification reason set to: ${verificationReason}`);
+      }
+    } else {
+      // No wallet address provided, just save hash locally
+      saved.blockchain = {
+        recipeHash: recipeHash,
+        isVerified: false,
+        verificationReason: "no_wallet_address",
+      };
+      await saved.save();
+      console.log(`ℹ️ Recipe hash calculated but not registered (no wallet address): ${recipeHash}`);
+    }
+  } catch (error) {
+    // Graceful degradation: Continue even if blockchain fails
+    console.error("❌ Error in blockchain integration:", error);
+    // Recipe is already saved, so we just log the error
+  }
+
   await AuditLog.logAction(
     "create",
     saved._id,
@@ -88,14 +213,146 @@ export async function updateRecipe(id, data, user, req = null) {
     }
   }
 
+  // Clean ingredients: remove _id fields that frontend might send (timestamp-based IDs)
+  if (data.ingredients) {
+    data.ingredients = (data.ingredients || []).map((ing) => {
+      const { _id, ...ingredient } = ing;
+      return ingredient;
+    });
+  }
+
+  // Clean steps: remove _id fields that frontend might send (timestamp-based IDs)
+  if (data.steps) {
+    data.steps = (data.steps || []).map((step) => {
+      const { _id, ...stepData } = step;
+      return stepData;
+    });
+  }
+
   Object.assign(existing, data);
   const updated = await existing.save();
+  
+  // Blockchain integration: Calculate new hash and update on blockchain
+  try {
+    // Calculate new recipe hash after update
+    const newRecipeHash = generateRecipeHash({
+      title: updated.title,
+      summary: updated.summary,
+      content: updated.content,
+      ingredients: updated.ingredients,
+      steps: updated.steps,
+      tags: updated.tags,
+      category: updated.category,
+      prepTime: updated.prepTime,
+      cookTime: updated.cookTime,
+      servings: updated.servings,
+    });
+
+    const oldHash = existing.blockchain?.recipeHash;
+    const authorWalletAddress = data.walletAddress || existing.blockchain?.authorWalletAddress;
+
+    // If recipe was previously registered and wallet address exists, update on blockchain
+    if (oldHash && authorWalletAddress && oldHash !== newRecipeHash) {
+      const blockchainResult = await blockchainService.updateRecipeHash(
+        oldHash,
+        newRecipeHash,
+        authorWalletAddress
+      );
+
+      if (blockchainResult.success) {
+        // Update blockchain metadata with new version
+        updated.blockchain = {
+          recipeHash: newRecipeHash,
+          authorWalletAddress: authorWalletAddress,
+          transactionHash: blockchainResult.transactionHash,
+          blockNumber: blockchainResult.blockNumber,
+          timestamp: blockchainResult.timestamp,
+          isVerified: true,
+        };
+        await updated.save();
+        console.log(`✅ Recipe hash updated on blockchain: ${newRecipeHash}`);
+      } else {
+        // Update hash locally but mark as not verified
+        let verificationReason = "blockchain_error";
+        const errorMsg = blockchainResult.error?.toLowerCase() || "";
+        if (
+          errorMsg.includes("already registered") ||
+          errorMsg.includes("recipe hash already") ||
+          errorMsg.includes("hash already exists") ||
+          (errorMsg.includes("execution reverted") && errorMsg.includes("already"))
+        ) {
+          verificationReason = "hash_already_exists";
+        }
+
+        updated.blockchain = {
+          ...updated.blockchain,
+          recipeHash: newRecipeHash,
+          isVerified: false,
+          verificationReason: verificationReason,
+        };
+        await updated.save();
+        console.warn(`⚠️ Failed to update recipe hash on blockchain: ${blockchainResult.error}`);
+      }
+    } else if (authorWalletAddress && !oldHash) {
+      // First time registering this recipe (wasn't registered before)
+      const blockchainResult = await blockchainService.registerRecipeHash(
+        newRecipeHash,
+        authorWalletAddress
+      );
+
+      if (blockchainResult.success) {
+        updated.blockchain = {
+          recipeHash: newRecipeHash,
+          authorWalletAddress: authorWalletAddress,
+          transactionHash: blockchainResult.transactionHash,
+          blockNumber: blockchainResult.blockNumber,
+          timestamp: blockchainResult.timestamp,
+          isVerified: true,
+        };
+        await updated.save();
+        console.log(`✅ Recipe hash registered on blockchain (first time): ${newRecipeHash}`);
+      } else {
+        let verificationReason = "blockchain_error";
+        const errorMsg = blockchainResult.error?.toLowerCase() || "";
+        if (
+          errorMsg.includes("already registered") ||
+          errorMsg.includes("recipe hash already") ||
+          errorMsg.includes("hash already exists") ||
+          (errorMsg.includes("execution reverted") && errorMsg.includes("already"))
+        ) {
+          verificationReason = "hash_already_exists";
+        }
+
+        updated.blockchain = {
+          recipeHash: newRecipeHash,
+          authorWalletAddress: authorWalletAddress,
+          isVerified: false,
+          verificationReason: verificationReason,
+        };
+        await updated.save();
+        console.warn(`⚠️ Failed to register recipe hash on blockchain: ${blockchainResult.error}`);
+      }
+    } else {
+      // Just update hash locally
+      updated.blockchain = {
+        ...updated.blockchain,
+        recipeHash: newRecipeHash,
+      };
+      await updated.save();
+    }
+  } catch (error) {
+    // Graceful degradation: Continue even if blockchain fails
+    console.error("❌ Error in blockchain integration during update:", error);
+  }
+
   await AuditLog.logAction("update", id, user, { title: updated.title }, req);
   return updated;
 }
 
 export async function getRecipe(id) {
-  return await Recipe.findById(id).populate("authorId", "name email");
+  return await Recipe.findById(id)
+    .populate("authorId", "name email")
+    .populate("images", "url alt originalName thumbnailUrl");
 }
 
 export async function deleteRecipe(id, user, req = null) {
@@ -213,7 +470,10 @@ export async function listRecipes(query) {
       { slug: { $regex: search, $options: "i" } },
     ];
   }
-  if (status) filter.status = status;
+  // Map "review" status to "pending" (recipes waiting for review are in pending status)
+  if (status) {
+    filter.status = status === "review" ? STATUS.PENDING : status;
+  }
   if (author) filter.authorId = author;
   if (tag) filter.tags = { $in: [tag] };
   if (category) filter.category = category;
@@ -251,7 +511,9 @@ export async function listRecipes(query) {
           localField: "images",
           foreignField: "_id",
           as: "images",
-          pipeline: [{ $project: { url: 1, alt: 1, originalName: 1 } }],
+          pipeline: [
+            { $project: { url: 1, alt: 1, originalName: 1, thumbnailUrl: 1 } },
+          ],
         },
       },
       { $addFields: { author: { $arrayElemAt: ["$author", 0] } } },
@@ -294,7 +556,7 @@ export async function listRecipes(query) {
     .populate("authorId", "name email")
     .populate("category", "name slug description")
     .populate("tags", "name slug description")
-    .populate("images", "url alt originalName");
+    .populate("images", "url alt originalName thumbnailUrl");
 
   const total = await Recipe.countDocuments(filter);
   const totalPages = Math.ceil(total / Number(limit));
@@ -354,8 +616,6 @@ export async function getAuditLogs(query = {}) {
     total: await AuditLog.countDocuments(filter),
   };
 }
-
-export const RecipeStatus = STATUS;
 
 // Public API methods
 export async function findWithPagination(filters = {}, options = {}) {
@@ -423,12 +683,40 @@ export async function findOne(filters, options = {}) {
   return await query.exec();
 }
 
-export async function incrementViews(id) {
-  return await Recipe.findByIdAndUpdate(
-    id,
-    { $inc: { views: 1 } },
-    { new: true }
-  );
+export async function incrementViews(id, req = null) {
+  try {
+    // Import ViewLog here to avoid circular dependency
+    const ViewLog = (await import("../models/ViewLog.js")).default;
+    
+    // Increment view count in recipe
+    const recipe = await Recipe.findByIdAndUpdate(
+      id,
+      { $inc: { views: 1 } },
+      { new: true }
+    );
+
+    // Log the view for timeseries analytics (don't fail if logging fails)
+    if (recipe) {
+      try {
+        await ViewLog.create({
+          recipeId: id,
+          viewedAt: new Date(),
+          userId: req?.user?.id || null,
+          ipAddress: req?.ip || req?.connection?.remoteAddress || req?.socket?.remoteAddress || null,
+        });
+        console.log(`✅ View logged for recipe ${id}`);
+      } catch (logError) {
+        // Don't fail the request if logging fails, but log the error
+        console.error("❌ Failed to log view:", logError);
+      }
+    }
+
+    return recipe;
+  } catch (error) {
+    console.error("❌ Error incrementing views:", error);
+    // Still return null or throw depending on your needs
+    throw error;
+  }
 }
 
 export default {
@@ -446,5 +734,5 @@ export default {
   findById,
   findOne,
   incrementViews,
-  RecipeStatus,
+  RecipeStatus: STATUS,
 };

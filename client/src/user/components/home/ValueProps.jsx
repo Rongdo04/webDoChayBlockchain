@@ -1,29 +1,31 @@
 import React from "react";
+import { FaBolt as FaBoltIcon, FaStar as FaStarIcon } from "react-icons/fa";
+import { GiBroccoli as GiBroccoliIcon, GiCookingPot as GiCookingPotIcon } from "react-icons/gi";
 
 const items = [
   {
     id: 1,
     title: "Dinh dưỡng cân bằng",
     text: "Công thức tối ưu tỉ lệ đạm thực vật – chất xơ – vi chất.",
-    icon: "🥦",
+    icon: GiBroccoliIcon,
   },
   {
     id: 2,
     title: "Nhanh & linh hoạt",
     text: "Nhiều món < 30 phút phù hợp bữa bận rộn.",
-    icon: "⚡",
+    icon: FaBoltIcon,
   },
   {
     id: 3,
     title: "Hương vị bản địa",
     text: "Giữ nét quen thuộc, dễ hợp khẩu vị gia đình.",
-    icon: "🍲",
+    icon: GiCookingPotIcon,
   },
   {
     id: 4,
     title: "Truyền cảm hứng",
     text: "Gợi ý thực đơn & mẹo nhỏ giúp đa dạng hóa bữa ăn.",
-    icon: "✨",
+    icon: FaStarIcon,
   },
 ];
 
@@ -43,7 +45,7 @@ export default function ValueProps() {
             className="p-5 rounded-2xl bg-white border border-emerald-900/10 shadow-sm hover:shadow-brand transition"
           >
             <div className="text-2xl mb-3" aria-hidden="true">
-              {it.icon}
+              {React.createElement(it.icon, { className: "w-8 h-8" })}
             </div>
             <h3 className="text-sm font-semibold text-emerald-950 mb-1">
               {it.title}

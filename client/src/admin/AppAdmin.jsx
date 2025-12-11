@@ -8,6 +8,7 @@ import Forbidden from "./pages/Forbidden.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import RecipesPage from "./pages/Recipes.jsx";
 import RecipeEditor from "./pages/RecipeEditor.jsx";
+import PostsPage from "./pages/Posts.jsx";
 import MediaLibrary from "./pages/MediaLibrary.jsx";
 import TaxonomyPage from "./pages/Taxonomy.jsx";
 import ModerationPage from "./pages/Moderation.jsx";
@@ -44,6 +45,7 @@ export default function AppAdmin() {
             <Route path="recipes" element={<RecipesPage />} />
             <Route path="recipes/new" element={<RecipeEditor />} />
             <Route path="recipes/:id/edit" element={<RecipeEditor />} />
+            <Route path="posts" element={<PostsPage />} />
             <Route path="media" element={<MediaLibrary />} />
             <Route path="taxonomy" element={<TaxonomyPage />} />
             <Route path="moderation" element={<ModerationPage />} />

@@ -8,7 +8,7 @@ export default function Tabs({ active, onChange }) {
   return (
     <div
       className="flex flex-wrap gap-2"
-      role="tablist"
+      role="tablist"fngày tạo
       aria-label="Phân vùng hồ sơ"
     >
       {tabs.map((t) => (

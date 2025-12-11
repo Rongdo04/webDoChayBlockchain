@@ -52,6 +52,22 @@ const reportSchema = new mongoose.Schema(
       default: "pending",
       index: true,
     },
+    // Admin review fields
+    reviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    reviewedAt: {
+      type: Date,
+      default: null,
+    },
+    adminNotes: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+      default: "",
+    },
     // Resolution details
     resolution: {
       action: {
@@ -129,24 +145,46 @@ reportSchema.statics.getStats = async function () {
     },
   ]);
 
-  const result = {
-    total: 0,
-    open: 0,
+  // Initialize all possible statuses
+  const byStatus = {
+    pending: 0,
+    reviewed: 0,
     resolved: 0,
+    rejected: 0,
+    open: 0, // Legacy support
   };
 
+  let total = 0;
+
   stats.forEach((stat) => {
-    result[stat._id] = stat.count;
-    result.total += stat.count;
+    const status = stat._id;
+    const count = stat.count;
+    
+    // Map status to byStatus object
+    if (byStatus.hasOwnProperty(status)) {
+      byStatus[status] = count;
+      // Also map legacy 'open' status to 'pending' for frontend compatibility
+      if (status === 'open') {
+        byStatus.pending = count; // Replace, don't add
+      }
+    } else {
+      // If status is not in byStatus, add it
+      byStatus[status] = count;
+    }
+    
+    total += count;
   });
 
   // Get recent reports count (last 7 days)
   const recentCount = await this.countDocuments({
     createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
   });
-  result.recent = recentCount;
 
-  return result;
+  return {
+    total,
+    byStatus,
+    recent: recentCount,
+  };
 };
 
 reportSchema.statics.getReasonStats = async function () {

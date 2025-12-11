@@ -25,6 +25,8 @@ const mediaSchema = new mongoose.Schema(
         "video/webm",
         "video/mov",
         "video/avi",
+        "video/quicktime", // common for .mov in browsers
+        "video/x-msvideo", // common for .avi
       ],
       index: true,
     },

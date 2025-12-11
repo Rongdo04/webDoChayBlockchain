@@ -171,7 +171,7 @@ export default function RecipePreviewStep({ data }) {
         ) : processedImages && processedImages.length > 0 ? (
           <div className="aspect-video w-full bg-emerald-900/10">
             <img
-              src={processedImages[0].url}
+              src={processedImages[0].thumbnailUrl || processedImages[0].url}
               alt={processedImages[0].alt || data.title}
               className="w-full h-full object-cover"
               onError={(e) => {
@@ -185,7 +185,7 @@ export default function RecipePreviewStep({ data }) {
             >
               <div className="text-center">
                 <div className="text-2xl mb-2">🖼️</div>
-                <div className="text-sm">Không thể tải hình ảnh</div>
+                <div className="text-sm">Không thể tải media</div>
               </div>
             </div>
           </div>
@@ -346,7 +346,7 @@ export default function RecipePreviewStep({ data }) {
           {processedImages && processedImages.length > 1 && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-emerald-900/70">
-                Hình ảnh bổ sung
+                Media bổ sung
               </h3>
               <div className="grid gap-4 md:grid-cols-2">
                 {processedImages.slice(1).map((image, idx) => (
@@ -355,8 +355,8 @@ export default function RecipePreviewStep({ data }) {
                     className="aspect-video rounded-lg overflow-hidden bg-emerald-50"
                   >
                     <img
-                      src={image.url}
-                      alt={image.alt || `Hình ảnh ${idx + 2}`}
+                      src={image.thumbnailUrl || image.url}
+                      alt={image.alt || `Media ${idx + 2}`}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.style.display = "none";
@@ -369,7 +369,7 @@ export default function RecipePreviewStep({ data }) {
                     >
                       <div className="text-center">
                         <div className="text-xl mb-1">🖼️</div>
-                        <div className="text-xs">Không thể tải</div>
+                        <div className="text-xs">Không thể tải media</div>
                       </div>
                     </div>
                     {image.caption && (

@@ -201,6 +201,16 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: ActionTypes.CLEAR_ERROR });
   }, []);
 
+  // Update user function
+  const updateUser = useCallback((updatedUser) => {
+    dispatch({
+      type: ActionTypes.LOAD_USER_SUCCESS,
+      payload: {
+        user: updatedUser,
+      },
+    });
+  }, []);
+
   const value = {
     user: state.user,
     token: state.token,
@@ -212,6 +222,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     loadUser,
     clearError,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

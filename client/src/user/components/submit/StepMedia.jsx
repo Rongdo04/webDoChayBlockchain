@@ -7,9 +7,11 @@ export default function StepMedia({ data, onChange }) {
     <div className="space-y-6">
       <section className="p-5 rounded-2xl border border-emerald-900/10 bg-white shadow-sm space-y-4">
         <header>
-          <h3 className="text-sm font-semibold text-emerald-900">Hình ảnh</h3>
+          <h3 className="text-sm font-semibold text-emerald-900">
+            Hình ảnh & Video
+          </h3>
           <p className="text-xs text-emerald-700/70">
-            Tải lên một vài ảnh đại diện món ăn.
+            Tải lên một vài media (ảnh hoặc video) đại diện món ăn.
           </p>
         </header>
         <UploadDropzone

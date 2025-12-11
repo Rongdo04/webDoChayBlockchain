@@ -1,4 +1,5 @@
 import React from "react";
+import { FaStar } from "react-icons/fa";
 
 export default function RatingStars({ value = 0, count = 0 }) {
   const full = Math.round(value * 10) / 10;
@@ -12,7 +13,7 @@ export default function RatingStars({ value = 0, count = 0 }) {
         }`}
         aria-hidden="true"
       >
-        ★
+        <FaStar />
       </span>
     );
   });

@@ -250,6 +250,40 @@ export async function getReportStats() {
   };
 }
 
+// Delete a report by ID with audit log
+export async function deleteReport(id, user, req = null) {
+  const report = await Report.findById(id);
+  if (!report) {
+    const error = new Error("Report not found");
+    error.status = 404;
+    error.code = "REPORT_NOT_FOUND";
+    throw error;
+  }
+
+  await Report.deleteOne({ _id: id });
+
+  await AuditLog.create({
+    action: "delete",
+    entityType: "system",
+    entityId: id,
+    userId: user._id || user.id,
+    userEmail: user.email,
+    userRole: user.role,
+    metadata: {
+      operation: "delete_report",
+      target: {
+        type: report.targetType,
+        id: report.targetId,
+      },
+      reason: report.reason,
+      status: report.status,
+    },
+    ipAddress: req?.ip || req?.connection?.remoteAddress,
+    userAgent: req?.get?.("User-Agent"),
+  });
+
+  return { deleted: true };
+}
 // Check if user has already reported specific target
 export async function hasUserReported(userId, targetType, targetId) {
   const existingReport = await Report.findOne({
@@ -319,6 +353,53 @@ export async function createReport(reportData, reporterId, req = null) {
   return report;
 }
 
+/**
+ * Update report status
+ */
+export async function updateReportStatus(id, status, adminId, notes = "") {
+  try {
+    const updateData = {
+      status,
+      reviewedBy: adminId,
+      reviewedAt: new Date(),
+      updatedAt: new Date(),
+    };
+    if (notes) {
+      updateData.adminNotes = notes;
+    }
+
+    // Log audit for status update
+    const report = await Report.findById(id);
+    if (report) {
+      await AuditLog.create({
+        action: "update",
+        entityType: "system",
+        entityId: id,
+        userId: adminId,
+        userEmail: "admin",
+        userRole: "admin",
+        metadata: {
+          operation: "update_report_status",
+          originalStatus: report.status,
+          newStatus: status,
+          notes: notes || "",
+        },
+      });
+    }
+
+    const updatedReport = await Report.findByIdAndUpdate(id, updateData, {
+      new: true,
+    })
+      .populate("reporterId", "name email avatar")
+      .populate("reviewedBy", "name email")
+      .lean();
+    return updatedReport;
+  } catch (error) {
+    console.error("Update report status repository error:", error);
+    throw error;
+  }
+}
+
 export default {
   listReports,
   getReport,
@@ -326,4 +407,6 @@ export default {
   getReportStats,
   hasUserReported,
   createReport,
+  deleteReport,
+  updateReportStatus,
 };

@@ -89,11 +89,6 @@ export default function CategoryChips({ limit = 8 }) {
         >
           {category.icon && <span className="text-base">{category.icon}</span>}
           {category.name}
-          {category.usageCount > 0 && (
-            <span className="text-xs text-emerald-600/70 ml-1">
-              ({category.usageCount})
-            </span>
-          )}
         </button>
       ))}
     </div>

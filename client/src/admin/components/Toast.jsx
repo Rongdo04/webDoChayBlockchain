@@ -5,6 +5,7 @@
  *  <Toast open type="success" title="Saved" message="Item saved" onClose={()=>{}} />
  */
 import React, { useEffect } from "react";
+import { FaCheck, FaExclamationCircle, FaInfoCircle, FaTimes } from "react-icons/fa";
 import { t } from "../../i18n";
 
 const typeStyle = {
@@ -42,9 +43,9 @@ export default function Toast({
       >
         <div className="flex items-start gap-3 px-4 py-3">
           <div className="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-            {type === "success" && "✓"}
-            {type === "error" && "!"}
-            {type === "info" && "i"}
+            {type === "success" && <FaCheck className="w-4 h-4" />}
+            {type === "error" && <FaExclamationCircle className="w-4 h-4" />}
+            {type === "info" && <FaInfoCircle className="w-4 h-4" />}
           </div>
           <div className="text-sm">
             {title && <div className="font-semibold mb-0.5">{title}</div>}
@@ -55,7 +56,7 @@ export default function Toast({
             onClick={() => onClose && onClose()}
             className="ml-auto text-white/80 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50 rounded"
           >
-            ✕
+            <FaTimes className="w-4 h-4" />
           </button>
         </div>
       </div>

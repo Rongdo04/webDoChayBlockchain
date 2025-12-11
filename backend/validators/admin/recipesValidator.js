@@ -42,6 +42,7 @@ export function validateUpdate(req, res, next) {
     "servings",
     "images",
     "slug",
+    "status", // Allow status updates (draft, pending, etc.)
   ];
   const bodyKeys = Object.keys(req.body || {});
   if (!bodyKeys.length) errors.body = "No fields provided";
@@ -95,8 +96,9 @@ export function validateListQuery(req, res, next) {
     req.query;
   const errors = {};
 
-  // Validate status
-  if (status && !Object.values(RecipeStatus).includes(status))
+  // Validate status - allow "review" as alias for "pending"
+  const validStatuses = [...Object.values(RecipeStatus), "review"];
+  if (status && !validStatuses.includes(status))
     errors.status = "Invalid status";
 
   // Validate sort fields (allow database field names)

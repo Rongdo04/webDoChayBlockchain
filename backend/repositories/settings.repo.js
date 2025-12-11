@@ -16,6 +16,7 @@ export async function getSettings() {
         brand: "VeggieCook",
         policy:
           "Welcome to our vegetarian recipe platform. Please respect our community guidelines and enjoy sharing healthy, plant-based recipes.",
+        featuredVideo: "",
         _singleton: true,
       });
     }
@@ -39,7 +40,13 @@ export async function updateSettings(updateData, adminUser) {
 
     // Track changes for audit
     const changes = {};
-    const allowedFields = ["siteTitle", "siteDesc", "brand", "policy"];
+    const allowedFields = [
+      "siteTitle",
+      "siteDesc",
+      "brand",
+      "policy",
+      "featuredVideo",
+    ];
 
     allowedFields.forEach((field) => {
       if (

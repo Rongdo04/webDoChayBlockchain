@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { recipesAPI } from "../../../services/recipesAPI.js";
-
+import { FaStar } from "react-icons/fa";
 // Real search with API
 export default function GroupedResults({ query }) {
   const [recipes, setRecipes] = useState([]);
@@ -166,7 +166,8 @@ export default function GroupedResults({ query }) {
                           {totalTime > 0 ? `${totalTime}′` : "Chưa có"}
                         </span>
                         <span className="px-2 py-1 rounded-md bg-emerald-900/5 text-[10px] font-medium text-emerald-900">
-                          ★ {rating > 0 ? rating.toFixed(1) : "0.0"}
+                          <FaStar className="inline mr-1" />{" "}
+                          {rating > 0 ? rating.toFixed(1) : "0.0"}
                         </span>
                       </div>
                     </div>

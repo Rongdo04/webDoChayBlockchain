@@ -35,6 +35,7 @@ export const getOverview = asyncHandler(async (req, res) => {
 export const getActivity = asyncHandler(async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
+    const days = parseInt(req.query.days) || 7;
 
     // Validate limit
     if (limit < 1 || limit > 100) {
@@ -47,7 +48,18 @@ export const getActivity = asyncHandler(async (req, res) => {
       });
     }
 
-    const activities = await metricsRepo.getRecentActivity(limit);
+    // Validate days
+    if (days < 1 || days > 365) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "INVALID_DAYS",
+          message: "Days must be between 1 and 365",
+        },
+      });
+    }
+
+    const activities = await metricsRepo.getRecentActivity(limit, days);
 
     res.json({
       success: true,

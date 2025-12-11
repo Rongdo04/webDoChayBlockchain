@@ -27,6 +27,12 @@ const settingsSchema = new mongoose.Schema(
       maxlength: [5000, "Policy text must not exceed 5000 characters"],
       trim: true,
     },
+    featuredVideo: {
+      type: String,
+      required: false,
+      maxlength: [500, "Featured video URL must not exceed 500 characters"],
+      trim: true,
+    },
     // Single document pattern - only one settings document allowed
     _singleton: {
       type: Boolean,

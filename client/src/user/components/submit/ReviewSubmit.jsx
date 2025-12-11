@@ -1,4 +1,6 @@
 import React from "react";
+import { FaCheckCircle } from "react-icons/fa";
+import { useMetaMask } from "../../../hooks/useMetaMask.js";
 
 export default function ReviewSubmit({
   data,
@@ -7,6 +9,19 @@ export default function ReviewSubmit({
   onSubmit,
   submitting,
 }) {
+  const {
+    account,
+    isConnected,
+    isConnecting,
+    isMetaMaskInstalled,
+    error: metamaskError,
+    connect,
+  } = useMetaMask();
+
+  const handleSubmit = () => {
+    // Pass wallet address to onSubmit if connected
+    onSubmit(account);
+  };
   const totalTime = (data.durationPrep || 0) + (data.durationCook || 0);
   return (
     <div className="space-y-6">
@@ -35,6 +50,41 @@ export default function ReviewSubmit({
               <li>Nguyên liệu: {data.ingredients.length}</li>
               <li>Bước: {data.steps.length}</li>
             </ul>
+            {/* MetaMask Connection */}
+            <div className="pt-2 pb-2 border-t border-emerald-900/10">
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-emerald-900">
+                  Bảo vệ bản quyền với Blockchain
+                </p>
+                {!isMetaMaskInstalled ? (
+                  <p className="text-xs text-emerald-700/70">
+                    Cài đặt MetaMask để bảo vệ công thức của bạn
+                  </p>
+                ) : !isConnected ? (
+                  <button
+                    type="button"
+                    onClick={connect}
+                    disabled={isConnecting}
+                    className="w-full px-3 py-2 text-xs font-medium rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  >
+                    {isConnecting ? "Đang kết nối..." : " Kết nối MetaMask"}
+                  </button>
+                ) : (
+                  <div className="space-y-1">
+                    <p className="text-xs text-emerald-700">
+                      <FaCheckCircle className="inline mr-1" /> Đã kết nối:{" "}
+                      {account?.slice(0, 6)}...{account?.slice(-4)}
+                    </p>
+                    <p className="text-[10px] text-emerald-600/70">
+                      Công thức sẽ được bảo vệ trên blockchain
+                    </p>
+                  </div>
+                )}
+                {metamaskError && (
+                  <p className="text-xs text-red-600">{metamaskError}</p>
+                )}
+              </div>
+            </div>
             <div className="flex gap-2 pt-2">
               <button
                 type="button"
@@ -46,7 +96,7 @@ export default function ReviewSubmit({
               <button
                 type="button"
                 disabled={submitting}
-                onClick={onSubmit}
+                onClick={handleSubmit}
                 className="flex-1 btn-brand disabled:opacity-50"
               >
                 {submitting ? "Đang gửi..." : "Gửi duyệt"}
@@ -125,7 +175,10 @@ const MediaCard = ({ data, onEditStep }) => (
       <ul className="grid grid-cols-3 gap-2">
         {data.images.map((image, idx) => {
           // Handle both old string format and new object format
-          const imageUrl = typeof image === "string" ? image : image.url;
+          const imageUrl =
+            typeof image === "string" ? image : image.thumbnailUrl || image.url;
+          const mediaType =
+            typeof image === "object" ? image.mediaType : "image";
           return (
             <li key={idx}>
               <img
@@ -133,6 +186,11 @@ const MediaCard = ({ data, onEditStep }) => (
                 alt={`Ảnh ${idx + 1}`}
                 className="w-full h-20 object-cover rounded-xl border border-emerald-900/10"
               />
+              {mediaType === "video" && (
+                <div className="-mt-5 ml-1 inline-block px-1.5 py-0.5 text-[10px] rounded bg-black/50 text-white">
+                  VIDEO
+                </div>
+              )}
             </li>
           );
         })}

@@ -39,7 +39,7 @@ const emptyRecipe = {
   cookTime: 0,
   servings: 1,
   images: [],
-  status: "draft",
+  status: "pending", // Mặc định là "chờ duyệt" khi tạo mới
   publishAt: null,
   ratingAvg: 0,
   ratingCount: 0,
@@ -205,7 +205,8 @@ export default function RecipeEditor() {
       }
     });
 
-    // Note: Don't set status here - it's handled by separate endpoints
+    // Set status to "draft" when saving as draft
+    payload.status = "draft";
 
     const result = await adminApi.safeApiCall(
       () =>
@@ -291,8 +292,8 @@ export default function RecipeEditor() {
       }
     }
 
-    // Note: Status changes should be handled by separate API endpoints
-    // For now, we'll just save the content and handle review status separately
+    // Set status to "pending" when submitting for review
+    payload.status = "pending";
 
     const result = await adminApi.safeApiCall(
       () =>
@@ -313,7 +314,7 @@ export default function RecipeEditor() {
       setData(updatedData);
       setOriginalData(updatedData);
       showToast(
-        isEditing ? "Đã cập nhật công thức" : "Đã thêm công thức mới",
+        isEditing ? "Đã gửi công thức để duyệt" : "Đã tạo công thức và gửi để duyệt",
         "success"
       );
 
@@ -508,7 +509,7 @@ export default function RecipeEditor() {
             disabled={saving}
             className="btn-brand disabled:opacity-60"
           >
-            {saving ? "Đang lưu..." : isEditing ? "Cập nhật" : "Tạo mới"}
+            {saving ? "Đang lưu..." : isEditing ? "Gửi duyệt" : "Gửi duyệt"}
           </button>
 
           {isEditing && data.status !== "published" && (

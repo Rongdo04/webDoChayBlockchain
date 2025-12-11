@@ -1,5 +1,6 @@
 // src/components/ApiTest.jsx - Test component for API client
 import React, { useState, useEffect } from "react";
+import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import { api, get, post } from "../lib/api.js";
 import { HttpError } from "../lib/httpError.js";
 
@@ -192,7 +193,7 @@ const ApiTest = () => {
                   result.success ? "text-green-800" : "text-red-800"
                 }`}
               >
-                {result.success ? "✅" : "❌"} {result.test}
+                {result.success ? <FaCheckCircle className="inline mr-1 text-green-500" /> : <FaTimesCircle className="inline mr-1 text-red-500" />} {result.test}
               </h4>
               <span className="text-sm text-gray-500">{result.timestamp}</span>
             </div>

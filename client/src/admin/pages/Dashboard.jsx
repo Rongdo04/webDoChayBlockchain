@@ -20,7 +20,7 @@ const formatDay = (ts) => new Date(ts).toISOString().slice(0, 10);
 
 // Generate human-readable description for activity
 function getActivityDescription(activity) {
-  const userName = activity.user?.name || "Unknown User";
+  const userName = activity.user?.name || "Người dùng không xác định";
   const action = activity.action;
   const entityType = activity.entityType;
 
@@ -79,46 +79,61 @@ function StatCard({ label, value, icon, growth }) {
 
 function BarChart({ data, period }) {
   const max = Math.max(1, ...data.map((d) => d.count));
+  const totalViews = data.reduce((sum, d) => sum + d.count, 0);
+  
   return (
     <div className="p-4 bg-white rounded-2xl border border-emerald-900/10 shadow-sm flex flex-col h-full">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-emerald-900">
-          Hoạt động ( {period} ngày gần đây )
+          Lượt xem ( {period} ngày gần đây )
         </h3>
-        <div className="text-xs text-emerald-700/60">
-          Max: {max.toLocaleString()} views
-        </div>
-      </div>
-      <div className="flex-1 flex items-end gap-1 w-full overflow-x-auto pb-2">
-        {data.map((d) => (
-          <div
-            key={d.day}
-            className="flex-1 min-w-[16px] flex flex-col items-center gap-1"
-          >
-            <div
-              className="w-full rounded-t-md bg-gradient-to-t from-emerald-950 via-emerald-900 to-lime-900 transition hover:opacity-80"
-              style={{ height: `${Math.max(4, (d.count / max) * 100)}%` }}
-              aria-label={`${d.count} views ngày ${d.day}`}
-              title={`${d.count.toLocaleString()} views - ${d.day}`}
-            />
-            <div className="text-[9px] text-emerald-800/60 font-medium">
-              {d.day.slice(5)}
-            </div>
+        {totalViews > 0 && (
+          <div className="text-xs text-emerald-700/70 font-medium">
+            Tổng: {totalViews.toLocaleString()} lượt xem
           </div>
-        ))}
+        )}
       </div>
+      {totalViews === 0 ? (
+        <div className="flex-1 flex items-center justify-center text-emerald-800/50 text-sm">
+          <p>Chưa có lượt xem nào trong {period} ngày gần đây</p>
+        </div>
+      ) : (
+        <div className="flex-1 flex items-end gap-1 w-full overflow-x-auto pb-2">
+          {data.map((d) => (
+            <div
+              key={d.day}
+              className="flex-1 min-w-[16px] flex flex-col items-center gap-1"
+            >
+              <div
+                className="w-full rounded-t-md bg-gradient-to-t from-emerald-950 via-emerald-900 to-lime-900 transition hover:opacity-80"
+                style={{ height: `${Math.max(4, (d.count / max) * 100)}%` }}
+                aria-label={`${d.count} lượt xem ngày ${d.day}`}
+                title={`${d.count.toLocaleString()} lượt xem - ${d.day}`}
+              />
+              <div className="text-[9px] text-emerald-800/60 font-medium">
+                {d.day.slice(5)}
+              </div>
+              {d.count > 0 && (
+                <div className="text-[10px] text-emerald-900 font-semibold mt-0.5">
+                  {d.count}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function ActivityFeed({ logs }) {
+function ActivityFeed({ logs, days = 7 }) {
   console.log("🐛 DEBUG - ActivityFeed received logs:", logs);
   console.log("🐛 DEBUG - logs.length:", logs.length);
 
   return (
     <div className="p-4 bg-white rounded-2xl border border-emerald-900/10 shadow-sm h-full flex flex-col">
       <h3 className="text-sm font-semibold text-emerald-900 mb-3">
-        Hoạt động gần đây ({logs.length} items)
+        Hoạt động ({days} ngày gần đây)
       </h3>
       <ul className="space-y-3 text-sm flex-1 overflow-auto pr-1">
         {logs.length > 0 ? (
@@ -228,25 +243,25 @@ export default function Dashboard() {
 
   const stats = [
     {
-      label: "Recipes",
+      label: "Công thức",
       value: metrics?.totals?.recipes || 0,
       icon: "🍽",
       growth: metrics?.growth?.recipes,
     },
     {
-      label: "Waiting Review",
+      label: "Chờ duyệt",
       value: metrics?.totals?.pendingReviews || 0,
       icon: "🕒",
       growth: metrics?.growth?.pendingReviews,
     },
     {
-      label: "New Comments (7d)",
+      label: "Bình luận mới (7 ngày)",
       value: metrics?.totals?.newComments7d || 0,
       icon: "💬",
       growth: metrics?.growth?.comments,
     },
     {
-      label: "Users",
+      label: "Người dùng",
       value: metrics?.totals?.users || 0,
       icon: "👥",
       growth: metrics?.growth?.users,
@@ -254,14 +269,21 @@ export default function Dashboard() {
   ];
 
   const chartData = metrics?.timeseries
-    ? metrics.timeseries.slice(-period).map((item) => ({
-        day: item.date,
-        count: item.views || item.recipes || item.comments || 0,
-      }))
+    ? metrics.timeseries.slice(-period).map((item) => {
+        const views = item.views || 0;
+        return {
+          day: item.date,
+          count: views,
+        };
+      })
     : [];
   const recentLogs = activities;
 
   // Debug logs
+  console.log("🐛 DEBUG - metrics:", metrics);
+  console.log("🐛 DEBUG - metrics.timeseries:", metrics?.timeseries);
+  console.log("🐛 DEBUG - chartData:", chartData);
+  console.log("🐛 DEBUG - chartData details:", chartData.map(d => ({ day: d.day, count: d.count })));
   console.log("🐛 DEBUG - activities state:", activities);
   console.log("🐛 DEBUG - recentLogs:", recentLogs);
   console.log("🐛 DEBUG - recentLogs.length:", recentLogs.length);
@@ -308,7 +330,7 @@ export default function Dashboard() {
                 }`}
                 aria-pressed={period === p}
               >
-                Last {p}d
+                {p} ngày
               </button>
             ))}
           </div>
@@ -350,7 +372,7 @@ export default function Dashboard() {
           {loading ? (
             <div className="h-full rounded-2xl bg-white border border-emerald-900/10 animate-pulse" />
           ) : (
-            <ActivityFeed logs={recentLogs} />
+            <ActivityFeed logs={recentLogs} days={period} />
           )}
         </div>
       </div>
@@ -363,10 +385,10 @@ export default function Dashboard() {
           <div className="p-4 rounded-2xl bg-white border border-emerald-900/10 text-sm text-emerald-800/70">
             <p className="mb-1 font-medium text-emerald-900">Thông tin API</p>
             <p>
-              Dashboard đã được kết nối với API backend thành công.
+              Bảng điều khiển đã được kết nối với API backend thành công.
               {metrics
-                ? ` Đã tải ${Object.keys(metrics).length} metric(s).`
-                : " Chưa có dữ liệu metrics."}
+                ? ` Đã tải ${Object.keys(metrics).length} số liệu.`
+                : " Chưa có dữ liệu số liệu."}
             </p>
           </div>
         )}

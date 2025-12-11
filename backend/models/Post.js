@@ -118,6 +118,63 @@ postSchema.statics.getTags = function () {
   return ["Kinh nghiệm", "Hỏi đáp", "Món mới", "Chia sẻ", "Tư vấn"];
 };
 
+// Static method to get post statistics
+postSchema.statics.getStats = async function () {
+  const stats = await this.aggregate([
+    {
+      $group: {
+        _id: "$status",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const result = {
+    total: 0,
+    pending: 0,
+    published: 0,
+    hidden: 0,
+  };
+
+  stats.forEach((stat) => {
+    result[stat._id] = stat.count;
+    result.total += stat.count;
+  });
+
+  // Get recent posts count (last 7 days)
+  const recentCount = await this.countDocuments({
+    createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+  });
+  result.recent = recentCount;
+
+  return result;
+};
+
+// Static method to get tag statistics
+postSchema.statics.getTagStats = async function () {
+  return this.aggregate([
+    {
+      $group: {
+        _id: "$tag",
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { count: -1 } },
+  ]);
+};
+
+// Static method to get status statistics
+postSchema.statics.getStatusStats = async function () {
+  return this.aggregate([
+    {
+      $group: {
+        _id: "$status",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+};
+
 // Transform output
 postSchema.set("toJSON", {
   transform: function (doc, ret) {

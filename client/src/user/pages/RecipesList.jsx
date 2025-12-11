@@ -57,17 +57,7 @@ export default function RecipesList() {
 
   // Filters from URL
   const search = searchParams.get("search") || "";
-  const ingredients = searchParams.get("ingredients") || "";
   const category = searchParams.get("category") || "";
-  const dietType = searchParams.get("dietType") || "";
-  const difficulty = searchParams.get("difficulty") || "";
-  const taste = searchParams.get("taste") || "";
-  const timeMin = searchParams.get("timeMin")
-    ? parseInt(searchParams.get("timeMin"))
-    : null;
-  const timeMax = searchParams.get("timeMax")
-    ? parseInt(searchParams.get("timeMax"))
-    : null;
   const sort = searchParams.get("sort") || "newest";
   const cursor = searchParams.get("cursor") || "";
   const limit = 12;
@@ -104,13 +94,7 @@ export default function RecipesList() {
 
       // Add filters if they exist
       if (search) options.search = search;
-      if (ingredients) options.ingredients = ingredients;
       if (category) options.category = category;
-      if (dietType) options.dietType = dietType;
-      if (difficulty) options.difficulty = difficulty;
-      if (taste) options.taste = taste;
-      if (timeMin !== null) options.timeMin = timeMin;
-      if (timeMax !== null) options.timeMax = timeMax;
 
       const res = await recipesAPI.getRecipes(options);
 
@@ -168,17 +152,7 @@ export default function RecipesList() {
   useEffect(() => {
     fetchRecipes(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    search,
-    ingredients,
-    category,
-    dietType,
-    difficulty,
-    taste,
-    timeMin,
-    timeMax,
-    sort,
-  ]);
+  }, [search, category, sort]);
 
   const updateFilter = (key, value) => {
     const newParams = new URLSearchParams(searchParams);
@@ -208,20 +182,8 @@ export default function RecipesList() {
       <FilterPanel
         search={search}
         onSearch={(value) => updateFilter("search", value)}
-        ingredients={ingredients}
-        onIngredients={(value) => updateFilter("ingredients", value)}
         category={category}
         onCategory={(value) => updateFilter("category", value)}
-        dietType={dietType}
-        onDietType={(value) => updateFilter("dietType", value)}
-        difficulty={difficulty}
-        onDifficulty={(value) => updateFilter("difficulty", value)}
-        taste={taste}
-        onTaste={(value) => updateFilter("taste", value)}
-        timeMin={timeMin}
-        onTimeMin={(value) => updateFilter("timeMin", value)}
-        timeMax={timeMax}
-        onTimeMax={(value) => updateFilter("timeMax", value)}
         total={pagination?.total || pagination?.totalCount || 0}
         onClearAll={clearAllFilters}
       />

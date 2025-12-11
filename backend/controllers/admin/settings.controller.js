@@ -5,6 +5,33 @@ import {
   validateFieldFormats,
 } from "../../validators/admin/settings.validator.js";
 
+// GET /api/settings/public - Get public settings (no auth required)
+export async function getPublicSettings(req, res) {
+  try {
+    const settings = await settingsRepo.getSettings();
+
+    res.json({
+      success: true,
+      data: {
+        siteTitle: settings.siteTitle,
+        siteDesc: settings.siteDesc,
+        brand: settings.brand,
+        featuredVideo: settings.featuredVideo,
+      },
+    });
+  } catch (error) {
+    console.error("Get public settings error:", error);
+
+    res.status(error.status || 500).json({
+      success: false,
+      error: {
+        code: error.code || "INTERNAL_ERROR",
+        message: error.message || "Failed to fetch public settings",
+      },
+    });
+  }
+}
+
 // GET /api/admin/settings - Get current settings
 export async function getSettings(req, res) {
   try {
@@ -18,6 +45,7 @@ export async function getSettings(req, res) {
         siteDesc: settings.siteDesc,
         brand: settings.brand,
         policy: settings.policy,
+        featuredVideo: settings.featuredVideo,
         updatedAt: settings.updatedAt,
         createdAt: settings.createdAt,
       },
@@ -71,6 +99,7 @@ export async function updateSettings(req, res) {
         siteDesc: updatedSettings.siteDesc,
         brand: updatedSettings.brand,
         policy: updatedSettings.policy,
+        featuredVideo: updatedSettings.featuredVideo,
         updatedAt: updatedSettings.updatedAt,
         createdAt: updatedSettings.createdAt,
       },

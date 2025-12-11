@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { FaStar, FaRegStar, FaClock, FaFire } from "react-icons/fa";
 import { recipesAPI } from "../../services/recipesAPI.js";
 import { useAuthAdapter } from "../../auth/useAuthAdapter.js";
 import useReportModal from "../../hooks/useReportModal";
@@ -39,8 +40,22 @@ export default function RecipeDetail() {
     clearToast: clearReportToast,
   } = useReportModal();
 
+  // Track if recipe has been fetched to prevent double API calls (StrictMode)
+  const hasFetchedRef = useRef(false);
+  const currentSlugRef = useRef(slug);
+
   // Fetch recipe data
   useEffect(() => {
+    // Reset ref if slug changes
+    if (currentSlugRef.current !== slug) {
+      hasFetchedRef.current = false;
+      currentSlugRef.current = slug;
+    }
+
+    // Prevent double fetch in StrictMode
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
+
     const fetchRecipe = async () => {
       if (!slug) return;
 
@@ -228,12 +243,56 @@ export default function RecipeDetail() {
           <header className="space-y-6">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-3">
-                <h1 className="text-2xl sm:text-3xl font-semibold leading-tight bg-gradient-to-br from-emerald-950 via-emerald-900 to-lime-900 bg-clip-text text-transparent">
-                  {recipe.title}
-                </h1>
-                <p className="text-emerald-900/70 text-sm leading-relaxed max-w-prose">
-                  {recipe.summary || recipe.description}
-                </p>
+                <div className="flex items-start gap-3">
+                  <div className="flex-1">
+                    <h1 className="text-2xl sm:text-3xl font-semibold leading-tight bg-gradient-to-br from-emerald-950 via-emerald-900 to-lime-900 bg-clip-text text-transparent">
+                      {recipe.title}
+                    </h1>
+                    <p className="text-emerald-900/70 text-sm leading-relaxed max-w-prose">
+                      {recipe.summary || recipe.description}
+                    </p>
+                  </div>
+                  {recipe.blockchain?.isVerified &&
+                    recipe.blockchain?.transactionHash && (
+                      <div className="shrink-0">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs font-medium shadow-sm">
+                          <svg
+                            className="w-3.5 h-3.5"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          <span>Verified on Blockchain</span>
+                        </div>
+                      </div>
+                    )}
+                  {recipe.blockchain?.recipeHash &&
+                    !recipe.blockchain?.isVerified &&
+                    recipe.blockchain?.verificationReason ===
+                      "hash_already_exists" && (
+                      <div className="shrink-0">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white text-xs font-medium shadow-sm">
+                          <svg
+                            className="w-3.5 h-3.5"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          <span>Trùng lặp - Chưa xác minh</span>
+                        </div>
+                      </div>
+                    )}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {recipe.tags?.map((tag) => (
                     <span
@@ -256,7 +315,15 @@ export default function RecipeDetail() {
                   }`}
                   aria-label={fav ? "Bỏ lưu công thức" : "Lưu công thức"}
                 >
-                  {fav ? "★ Đã lưu" : "☆ Lưu"}
+                  {fav ? (
+                    <>
+                      <FaStar className="inline mr-1" /> Đã lưu
+                    </>
+                  ) : (
+                    <>
+                      <FaRegStar className="inline mr-1" /> Lưu
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={handleReport}
@@ -282,10 +349,12 @@ export default function RecipeDetail() {
             </div>
             <div className="flex flex-wrap gap-4 text-[11px] uppercase tracking-wide text-emerald-800/50">
               <div className="flex items-center gap-1 font-medium text-emerald-900/70">
-                ⏱ Chuẩn bị {recipe.prepTime || 0} phút
+                <FaClock className="inline mr-1" /> Chuẩn bị{" "}
+                {recipe.prepTime || 0} phút
               </div>
               <div className="flex items-center gap-1 font-medium text-emerald-900/70">
-                🔥 Nấu {recipe.cookTime || 0} phút
+                <FaFire className="inline mr-1" /> Nấu {recipe.cookTime || 0}{" "}
+                phút
               </div>
               <div className="flex items-center gap-1 font-medium text-emerald-900/70">
                 👥 {recipe.servings || 1} khẩu phần
@@ -328,6 +397,97 @@ export default function RecipeDetail() {
             <h3 className="text-sm font-semibold uppercase tracking-wide text-emerald-900/70">
               Thông tin
             </h3>
+            {recipe.blockchain?.isVerified && (
+              <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200/50 space-y-2">
+                <div className="flex items-center gap-2">
+                  <svg
+                    className="w-4 h-4 text-blue-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="text-xs font-semibold text-blue-900">
+                    Đã xác minh trên Blockchain
+                  </span>
+                </div>
+                {recipe.blockchain.transactionHash && (
+                  <div className="text-[10px] text-blue-700/80 space-y-0.5">
+                    <div>
+                      <span className="font-medium">TX:</span>{" "}
+                      <span className="font-mono">
+                        {recipe.blockchain.transactionHash.slice(0, 10)}...
+                        {recipe.blockchain.transactionHash.slice(-8)}
+                      </span>
+                    </div>
+                    {recipe.blockchain.blockNumber && (
+                      <div>
+                        <span className="font-medium">Block:</span>{" "}
+                        {recipe.blockchain.blockNumber}
+                      </div>
+                    )}
+                    {recipe.blockchain.timestamp && (
+                      <div>
+                        <span className="font-medium">Đăng ký:</span>{" "}
+                        {new Date(
+                          recipe.blockchain.timestamp
+                        ).toLocaleDateString("vi-VN")}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+            {recipe.blockchain?.recipeHash &&
+              !recipe.blockchain?.isVerified && (
+                <div className="p-3 rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/50 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <svg
+                      className="w-4 h-4 text-amber-600"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="text-xs font-semibold text-amber-900">
+                      {recipe.blockchain.verificationReason ===
+                      "hash_already_exists"
+                        ? "Công thức trùng lặp"
+                        : recipe.blockchain.verificationReason ===
+                          "no_wallet_address"
+                        ? "Chưa kết nối MetaMask"
+                        : "Chưa xác minh trên Blockchain"}
+                    </span>
+                  </div>
+                  {recipe.blockchain.verificationReason ===
+                    "hash_already_exists" && (
+                    <div className="text-[10px] text-amber-700/80 space-y-0.5">
+                      <p>
+                        Công thức này có nội dung trùng với một công thức đã
+                        được đăng ký trước đó trên blockchain. Vui lòng chỉnh
+                        sửa nội dung để tạo công thức mới.
+                      </p>
+                    </div>
+                  )}
+                  {recipe.blockchain.verificationReason ===
+                    "no_wallet_address" && (
+                    <div className="text-[10px] text-amber-700/80 space-y-0.5">
+                      <p>
+                        Công thức này chưa được bảo vệ bản quyền. Kết nối
+                        MetaMask khi tạo công thức để đăng ký trên blockchain.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-[13px] text-emerald-900/80">
               <div className="space-y-1 col-span-2">
                 <dt className="text-[11px] font-medium uppercase tracking-wide text-emerald-800/50">
@@ -354,12 +514,7 @@ export default function RecipeDetail() {
                   <dd className="text-emerald-800/60">Không rõ</dd>
                 )}
               </div>
-              <div>
-                <dt className="text-[11px] font-medium uppercase tracking-wide text-emerald-800/50">
-                  Danh mục
-                </dt>
-                <dd>{recipe.category}</dd>
-              </div>
+
               {recipe.dietType && (
                 <div>
                   <dt className="text-[11px] font-medium uppercase tracking-wide text-emerald-800/50">

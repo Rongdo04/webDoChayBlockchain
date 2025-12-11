@@ -335,10 +335,10 @@ export default function ModerationQueue_fixed() {
         <td className="px-4 py-3 align-middle">
           <div className="text-sm">
             <div className="text-emerald-900/90">
-              {comment.user?.username || "Anonymous"}
+              {comment.userId?.name || "Anonymous"}
             </div>
             <div className="text-xs text-emerald-800/70">
-              {comment.user?.email}
+              {comment.userId?.email}
             </div>
           </div>
         </td>

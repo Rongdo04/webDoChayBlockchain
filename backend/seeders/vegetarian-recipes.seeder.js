@@ -27,7 +27,7 @@ const vegetarianRecipes = [
       { order: 2, description: "Hấp cà tím trong 15 phút", duration: 15 },
       { order: 3, description: "Trộn tương với tỏi băm và dầu", duration: 5 },
     ],
-    tags: ["chay", "eggplant", "steamed", "healthy"],
+    tags: ["vegetarian", "healthy", "traditional"],
     category: "mon-chinh",
     prepTime: 15,
     cookTime: 15,
@@ -55,7 +55,7 @@ const vegetarianRecipes = [
       },
       { order: 3, description: "Nêm nếm và rắc tiêu", duration: 5 },
     ],
-    tags: ["chay", "eggplant", "braised", "spicy"],
+    tags: ["vegetarian", "spicy", "traditional"],
     category: "mon-chinh",
     prepTime: 15,
     cookTime: 20,
@@ -83,7 +83,7 @@ const vegetarianRecipes = [
       { order: 2, description: "Xào cà tím với cà chua", duration: 8 },
       { order: 3, description: "Nêm đường, giấm vừa ăn", duration: 2 },
     ],
-    tags: ["chay", "eggplant", "sweet-sour", "vietnamese"],
+    tags: ["vegetarian", "traditional", "quick-meal"],
     category: "mon-chinh",
     prepTime: 15,
     cookTime: 10,
@@ -111,7 +111,7 @@ const vegetarianRecipes = [
       },
       { order: 3, description: "Cho lá lốt vào xào chín", duration: 3 },
     ],
-    tags: ["chay", "eggplant", "la-lot", "aromatic"],
+    tags: ["vegetarian", "traditional", "quick-meal"],
     category: "mon-chinh",
     prepTime: 10,
     cookTime: 11,
@@ -139,7 +139,7 @@ const vegetarianRecipes = [
       { order: 2, description: "Phi tỏi thơm, xào cà tím", duration: 8 },
       { order: 3, description: "Rắc hành lá thái nhỏ", duration: 2 },
     ],
-    tags: ["chay", "eggplant", "garlic", "simple"],
+    tags: ["vegetarian", "quick-meal", "traditional"],
     category: "mon-chinh",
     prepTime: 15,
     cookTime: 10,
@@ -167,8 +167,8 @@ const vegetarianRecipes = [
       { order: 2, description: "Phi hành tím, cho nước dùng vào", duration: 5 },
       { order: 3, description: "Cho bông cải và cà rốt vào nấu", duration: 10 },
     ],
-    tags: ["chay", "soup", "cauliflower", "healthy"],
-    category: "canh-soup",
+    tags: ["vegetarian", "healthy", "traditional"],
+    category: "mon-chinh",
     prepTime: 10,
     cookTime: 15,
     servings: 4,
@@ -191,8 +191,8 @@ const vegetarianRecipes = [
       { order: 2, description: "Nấu nước dùng với me chua", duration: 8 },
       { order: 3, description: "Cho thơm, cà chua vào nấu", duration: 12 },
     ],
-    tags: ["chay", "soup", "sour", "pineapple"],
-    category: "canh-soup",
+    tags: ["vegetarian", "traditional", "healthy"],
+    category: "mon-chinh",
     prepTime: 15,
     cookTime: 20,
     servings: 4,
@@ -215,8 +215,8 @@ const vegetarianRecipes = [
       { order: 2, description: "Phi hành tím, cho nước dùng vào", duration: 5 },
       { order: 3, description: "Cho đậu hũ và hẹ vào nấu", duration: 8 },
     ],
-    tags: ["chay", "soup", "chinese-chives", "tofu"],
-    category: "canh-soup",
+    tags: ["vegetarian", "healthy", "traditional"],
+    category: "mon-chinh",
     prepTime: 8,
     cookTime: 13,
     servings: 4,
@@ -239,8 +239,8 @@ const vegetarianRecipes = [
       { order: 2, description: "Cho nước dùng vào đun sôi", duration: 8 },
       { order: 3, description: "Thêm đậu hũ vào nấu", duration: 5 },
     ],
-    tags: ["chay", "soup", "kimchi", "korean"],
-    category: "canh-soup",
+    tags: ["vegetarian", "spicy", "traditional"],
+    category: "mon-chinh",
     prepTime: 10,
     cookTime: 18,
     servings: 4,
@@ -271,8 +271,8 @@ const vegetarianRecipes = [
         duration: 10,
       },
     ],
-    tags: ["chay", "soup", "seaweed", "nutritious"],
-    category: "canh-soup",
+    tags: ["vegetarian", "healthy", "traditional"],
+    category: "mon_chinh",
     prepTime: 20,
     cookTime: 15,
     servings: 4,
@@ -295,7 +295,7 @@ const vegetarianRecipes = [
       { order: 2, description: "Nấu cháo với nước dùng", duration: 40 },
       { order: 3, description: "Cho nấm và cà rốt vào nấu", duration: 15 },
     ],
-    tags: ["chay", "porridge", "mushroom", "carrot"],
+    tags: ["vegetarian", "healthy", "traditional"],
     category: "mon-chinh",
     prepTime: 35,
     cookTime: 55,
@@ -319,7 +319,7 @@ const vegetarianRecipes = [
       { order: 2, description: "Xào nấm với rau củ", duration: 8 },
       { order: 3, description: "Trộn mì với nấm đã xào", duration: 5 },
     ],
-    tags: ["chay", "noodles", "mushroom", "stir-fry"],
+    tags: ["vegetarian", "quick-meal", "traditional"],
     category: "mon-chinh",
     prepTime: 15,
     cookTime: 16,
@@ -347,7 +347,7 @@ const vegetarianRecipes = [
       },
       { order: 3, description: "Kho đến khi nước cạn sệt", duration: 10 },
     ],
-    tags: ["chay", "mushroom", "braised", "shiitake"],
+    tags: ["vegetarian", "traditional", "healthy"],
     category: "mon-chinh",
     prepTime: 35,
     cookTime: 35,
@@ -371,7 +371,7 @@ const vegetarianRecipes = [
       { order: 2, description: "Kho nấm với nước dùng", duration: 20 },
       { order: 3, description: "Nêm tiêu và gia vị", duration: 5 },
     ],
-    tags: ["chay", "mushroom", "pepper", "braised"],
+    tags: ["vegetarian", "spicy", "traditional"],
     category: "mon-chinh",
     prepTime: 8,
     cookTime: 25,
@@ -395,7 +395,7 @@ const vegetarianRecipes = [
       { order: 2, description: "Xào hành tím thơm", duration: 3 },
       { order: 3, description: "Cho nấm và rau củ vào xào", duration: 8 },
     ],
-    tags: ["chay", "mushroom", "enoki", "stir-fry"],
+    tags: ["vegetarian", "quick-meal", "healthy"],
     category: "mon-chinh",
     prepTime: 10,
     cookTime: 11,
@@ -419,7 +419,7 @@ const vegetarianRecipes = [
       { order: 2, description: "Trộn bột chiên với nước", duration: 5 },
       { order: 3, description: "Tẩm nấm bột rồi chiên vàng", duration: 15 },
     ],
-    tags: ["chay", "mushroom", "fried", "crispy"],
+    tags: ["vegetarian", "traditional", "quick-meal"],
     category: "mon-khai-vi",
     prepTime: 15,
     cookTime: 20,
@@ -443,8 +443,8 @@ const vegetarianRecipes = [
       { order: 2, description: "Rửa sạch rau, để ráo", duration: 5 },
       { order: 3, description: "Trộn tất cả với nước mắm chay", duration: 5 },
     ],
-    tags: ["chay", "salad", "tofu", "fresh"],
-    category: "salad-goi",
+    tags: ["vegetarian", "healthy", "quick-meal"],
+    category: "mon-khai-vi",
     prepTime: 15,
     cookTime: 8,
     servings: 4,
@@ -467,7 +467,7 @@ const vegetarianRecipes = [
       { order: 2, description: "Phi sả ớt thơm", duration: 3 },
       { order: 3, description: "Xào đậu hũ với sả ớt", duration: 5 },
     ],
-    tags: ["chay", "tofu", "lemongrass", "spicy"],
+    tags: ["vegetarian", "spicy", "quick-meal"],
     category: "mon-chinh",
     prepTime: 10,
     cookTime: 18,
@@ -491,7 +491,7 @@ const vegetarianRecipes = [
       { order: 2, description: "Xào rau củ sơ qua", duration: 5 },
       { order: 3, description: "Kho tất cả với nước dùng", duration: 20 },
     ],
-    tags: ["chay", "tofu", "vegetables", "braised"],
+    tags: ["vegetarian", "traditional", "healthy"],
     category: "mon-chinh",
     prepTime: 15,
     cookTime: 33,
@@ -519,7 +519,7 @@ const vegetarianRecipes = [
         duration: 5,
       },
     ],
-    tags: ["chay", "soft-tofu", "shiitake", "sauce"],
+    tags: ["vegetarian", "traditional", "healthy"],
     category: "mon-chinh",
     prepTime: 15,
     cookTime: 18,
@@ -543,7 +543,7 @@ const vegetarianRecipes = [
       { order: 2, description: "Xào rau củ sơ qua", duration: 6 },
       { order: 3, description: "Trộn đậu hũ với rau củ", duration: 3 },
     ],
-    tags: ["chay", "tofu", "mixed-vegetables", "colorful"],
+    tags: ["vegetarian", "healthy", "quick-meal"],
     category: "mon-chinh",
     prepTime: 15,
     cookTime: 17,
@@ -567,11 +567,69 @@ const vegetarianRecipes = [
       { order: 2, description: "Xào tàu mũ với muối", duration: 8 },
       { order: 3, description: "Rắc rau răm thái nhỏ", duration: 2 },
     ],
-    tags: ["chay", "bitter-melon", "vietnamese-mint", "fresh"],
-    category: "side-dish",
+    tags: ["vegetarian", "healthy", "traditional"],
+    category: "mon-khai-vi",
     prepTime: 8,
     cookTime: 10,
     servings: 4,
+    status: "published",
+  },
+];
+
+// Additional beverage recipes to diversify categories
+const beverageRecipes = [
+  {
+    title: "Nước Chanh Sả",
+    originalName: "",
+    summary: "Đồ uống thanh mát với chanh và sả",
+    content:
+      "Nước chanh sả thơm ngon, dễ làm, giúp giải nhiệt và thanh lọc cơ thể.",
+    ingredients: [
+      { name: "Chanh", amount: "2", unit: "quả", notes: "Vắt lấy nước" },
+      { name: "Sả", amount: "2", unit: "cây", notes: "Đập dập" },
+      { name: "Đường", amount: "2", unit: "tbsp", notes: "Tùy khẩu vị" },
+      { name: "Nước", amount: "500", unit: "ml", notes: "Lạnh" },
+    ],
+    steps: [
+      {
+        order: 1,
+        description: "Đun sả với nước 5 phút, để nguội",
+        duration: 5,
+      },
+      {
+        order: 2,
+        description: "Thêm nước cốt chanh và đường, khuấy đều",
+        duration: 2,
+      },
+      { order: 3, description: "Thêm đá và thưởng thức", duration: 1 },
+    ],
+    tags: ["healthy", "quick-meal"],
+    category: "do-uong",
+    prepTime: 5,
+    cookTime: 5,
+    servings: 2,
+    status: "published",
+  },
+  {
+    title: "Trà Gừng Mật Ong",
+    originalName: "",
+    summary: "Đồ uống ấm nóng tốt cho cổ họng",
+    content:
+      "Trà gừng mật ong giúp giữ ấm cơ thể, tốt cho tiêu hóa và cổ họng.",
+    ingredients: [
+      { name: "Gừng", amount: "20", unit: "g", notes: "Thái lát" },
+      { name: "Mật ong", amount: "1", unit: "tbsp", notes: "Tùy khẩu vị" },
+      { name: "Nước", amount: "300", unit: "ml", notes: "Sôi" },
+    ],
+    steps: [
+      { order: 1, description: "Hãm gừng với nước sôi 5-7 phút", duration: 7 },
+      { order: 2, description: "Để bớt nóng rồi thêm mật ong", duration: 2 },
+    ],
+    tags: ["healthy", "traditional"],
+    category: "do-uong",
+    prepTime: 3,
+    cookTime: 7,
+    servings: 1,
     status: "published",
   },
 ];
@@ -597,14 +655,35 @@ async function seedVegetarianRecipes() {
       mediaMap[media.originalName] = media._id;
     });
 
-    console.log("📋 Creating recipes with matching images...");
-    const recipesToCreate = vegetarianRecipes.map((recipe) => {
+    console.log(
+      "📋 Creating recipes with matching images & balancing categories..."
+    );
+
+    // Build base list with some beverages added
+    const baseList = [...vegetarianRecipes, ...beverageRecipes];
+
+    // Distribute non-beverage items evenly across 4 food categories
+    const nonDrinkCategories = [
+      "mon-khai-vi",
+      "mon-chinh",
+      "mon-trang-mieng",
+      "mon-nuong",
+    ];
+    let nonDrinkIdx = 0;
+
+    const recipesToCreate = baseList.map((recipe) => {
+      // Assign balanced category if not a beverage
+      const assignedCategory =
+        recipe.category === "do-uong"
+          ? "do-uong"
+          : nonDrinkCategories[nonDrinkIdx++ % nonDrinkCategories.length];
       const mediaId = mediaMap[recipe.originalName];
       return {
         ...recipe,
         slug: slugify(recipe.title),
         authorId: adminUser._id,
         images: mediaId ? [mediaId] : [],
+        category: assignedCategory,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

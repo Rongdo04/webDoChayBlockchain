@@ -1,23 +1,66 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import settingsAPI from "../../../services/settingsAPI";
 
 export default function Hero() {
   const [q, setQ] = useState("");
+  const [settings, setSettings] = useState({
+    siteTitle: "Ăn chay ngon mỗi ngày",
+    siteDesc:
+      "Khám phá hàng trăm công thức chay đơn giản, đủ dưỡng chất và đầy cảm hứng cho bữa ăn gia đình bạn.",
+  });
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await settingsAPI.getPublicSettings();
+        if (response.success && response.data) {
+          setSettings({
+            siteTitle: response.data.siteTitle || "Ăn chay ngon mỗi ngày",
+            siteDesc:
+              response.data.siteDesc ||
+              "Khám phá hàng trăm công thức chay đơn giản, đủ dưỡng chất và đầy cảm hứng cho bữa ăn gia đình bạn.",
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch settings:", error);
+        // Keep default values on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
   const submit = (e) => {
     e.preventDefault();
     if (!q.trim()) return;
     navigate(`/search?q=${encodeURIComponent(q.trim())}`);
   };
+
+  if (loading) {
+    return (
+      <section className="relative overflow-hidden rounded-3xl bg-brand text-lime-50 p-8 md:p-14 shadow-brand">
+        <div className="max-w-2xl space-y-6">
+          <div className="h-12 bg-lime-200/20 rounded-xl animate-pulse"></div>
+          <div className="h-6 bg-lime-200/20 rounded-lg animate-pulse"></div>
+          <div className="h-6 bg-lime-200/20 rounded-lg animate-pulse w-3/4"></div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="relative overflow-hidden rounded-3xl bg-brand text-lime-50 p-8 md:p-14 shadow-brand">
       <div className="max-w-2xl space-y-6">
         <h1 className="text-3xl md:text-5xl font-bold leading-tight tracking-tight">
-          Ăn chay ngon mỗi ngày
+          {settings.siteTitle}
         </h1>
         <p className="text-lime-100/80 text-sm md:text-base leading-relaxed max-w-xl">
-          Khám phá hàng trăm công thức chay đơn giản, đủ dưỡng chất và đầy cảm
-          hứng cho bữa ăn gia đình bạn.
+          {settings.siteDesc}
         </p>
         <form
           onSubmit={submit}

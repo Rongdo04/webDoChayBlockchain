@@ -11,6 +11,8 @@ import recipesRoutes from "./routes/recipesRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import reportsRoutes from "./routes/reportsRoutes.js";
 import postsRoutes from "./routes/postsRoutes.js";
+import favoritesRoutes from "./routes/favoritesRoutes.js";
+import settingsRoutes from "./routes/settings.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 import config from "./config/index.js";
 
@@ -49,6 +51,8 @@ app.use("/api/recipes", recipesRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/posts", postsRoutes);
+app.use("/api/users", favoritesRoutes);
+app.use("/api/settings", settingsRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

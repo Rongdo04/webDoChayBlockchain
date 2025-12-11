@@ -3,7 +3,7 @@ import validator from "validator";
 
 // Validate settings update request
 export function validateUpdateSettings(req, res, next) {
-  const { siteTitle, siteDesc, brand, policy } = req.body;
+  const { siteTitle, siteDesc, brand, policy, featuredVideo } = req.body;
   const errors = {};
 
   // Validate siteTitle
@@ -60,10 +60,31 @@ export function validateUpdateSettings(req, res, next) {
     }
   }
 
+  // Validate featuredVideo
+  if (featuredVideo !== undefined) {
+    if (featuredVideo && typeof featuredVideo !== "string") {
+      errors.featuredVideo = "Featured video must be a string";
+    } else if (featuredVideo && featuredVideo.trim().length === 0) {
+      errors.featuredVideo = "Featured video URL cannot be empty";
+    } else if (featuredVideo && featuredVideo.length > 500) {
+      errors.featuredVideo =
+        "Featured video URL must not exceed 500 characters";
+    } else if (
+      featuredVideo &&
+      !validator.isURL(featuredVideo, { protocols: ["http", "https"] })
+    ) {
+      errors.featuredVideo = "Featured video must be a valid URL";
+    }
+  }
+
   // Check if at least one field is provided
-  const providedFields = [siteTitle, siteDesc, brand, policy].filter(
-    (field) => field !== undefined
-  );
+  const providedFields = [
+    siteTitle,
+    siteDesc,
+    brand,
+    policy,
+    featuredVideo,
+  ].filter((field) => field !== undefined);
   if (providedFields.length === 0) {
     errors.general = "At least one field must be provided for update";
   }
@@ -73,7 +94,8 @@ export function validateUpdateSettings(req, res, next) {
     siteTitle !== undefined ||
     siteDesc !== undefined ||
     brand !== undefined ||
-    policy !== undefined
+    policy !== undefined ||
+    featuredVideo !== undefined
   ) {
     // If any field is provided, we should validate all are eventually present
     // This will be handled by the repository layer and Mongoose schema
@@ -127,6 +149,14 @@ export function validateFieldFormats(data) {
     }
   }
 
+  if (data.featuredVideo) {
+    // Check for potentially harmful content in video URL
+    if (/<script|javascript:|on\w+=/i.test(data.featuredVideo)) {
+      errors.featuredVideo =
+        "Featured video URL contains potentially harmful content";
+    }
+  }
+
   return errors;
 }
 
@@ -149,6 +179,11 @@ export function sanitizeSettingsData(data) {
   if (data.policy !== undefined) {
     // For policy, we might want to allow some basic HTML, so minimal sanitization
     sanitized.policy = data.policy.toString().trim();
+  }
+
+  if (data.featuredVideo !== undefined) {
+    // Don't escape URLs for featuredVideo to preserve valid URL format
+    sanitized.featuredVideo = data.featuredVideo.toString().trim();
   }
 
   return sanitized;

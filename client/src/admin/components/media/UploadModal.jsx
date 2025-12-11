@@ -3,13 +3,23 @@
  * Supports both local and S3 upload modes
  */
 import React, { useState, useRef, useCallback } from "react";
+import { FaCheck, FaTimes } from "react-icons/fa";
 
 const ALLOWED_TYPES = {
   image: ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"],
-  video: ["video/mp4", "video/webm", "video/ogg"],
+  // Sync with backend allowed mimes (plus common equivalents)
+  video: [
+    "video/mp4",
+    "video/webm",
+    "video/mov",
+    "video/avi",
+    "video/quicktime", // common for .mov
+    "video/x-msvideo", // common for .avi
+  ],
 };
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+// Sync with backend limit (100MB)
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
 export default function UploadModal({
   open,
@@ -23,12 +33,73 @@ export default function UploadModal({
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef();
 
+  // Generate a client-side thumbnail for a video file (first/1s frame)
+  const getVideoThumbnail = useCallback(async (file) => {
+    return new Promise((resolve) => {
+      try {
+        const url = URL.createObjectURL(file);
+        const video = document.createElement("video");
+        video.preload = "metadata";
+        video.src = url;
+        video.muted = true;
+
+        const cleanup = () => {
+          try {
+            URL.revokeObjectURL(url);
+          } catch {}
+        };
+
+        const capture = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            const width = video.videoWidth || 480;
+            const height = video.videoHeight || 270;
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+            cleanup();
+            resolve(dataUrl);
+          } catch (e) {
+            cleanup();
+            resolve("");
+          }
+        };
+
+        video.addEventListener("loadedmetadata", () => {
+          try {
+            const targetTime = Math.min(
+              1,
+              Math.max(0, (video.duration || 0) / 2)
+            );
+            const onSeeked = () => {
+              video.removeEventListener("seeked", onSeeked);
+              capture();
+            };
+            video.addEventListener("seeked", onSeeked);
+            video.currentTime = targetTime;
+          } catch {
+            capture();
+          }
+        });
+
+        video.addEventListener("error", () => {
+          cleanup();
+          resolve("");
+        });
+      } catch {
+        resolve("");
+      }
+    });
+  }, []);
+
   const validateFile = (file) => {
     const errors = [];
 
     // Check file size
     if (file.size > MAX_FILE_SIZE) {
-      errors.push(`File "${file.name}" quá lớn (tối đa 10MB)`);
+      errors.push(`File "${file.name}" quá lớn (tối đa 100MB)`);
     }
 
     // Check file type
@@ -41,32 +112,42 @@ export default function UploadModal({
   };
 
   const handleFiles = useCallback(
-    (fileList) => {
+    async (fileList) => {
       const validationErrors = [];
       const validFiles = [];
 
-      Array.from(fileList).forEach((file) => {
+      const tasks = Array.from(fileList).map(async (file) => {
         const errors = validateFile(file);
         if (errors.length > 0) {
           validationErrors.push(...errors);
-        } else {
-          const fileType = ALLOWED_TYPES.image.includes(file.type)
-            ? "image"
-            : "video";
-          validFiles.push({
-            id: "temp-" + Math.random().toString(36).slice(2),
-            file,
-            name: file.name,
-            type: fileType,
-            preview: URL.createObjectURL(file),
-            alt: "",
-            tags: "",
-            progress: 0,
-            error: null,
-            uploaded: false,
-          });
+          return null;
         }
+        const fileType = ALLOWED_TYPES.image.includes(file.type)
+          ? "image"
+          : "video";
+        let preview = "";
+        if (fileType === "image") {
+          preview = URL.createObjectURL(file);
+        } else {
+          preview = await getVideoThumbnail(file);
+        }
+        return {
+          id: "temp-" + Math.random().toString(36).slice(2),
+          file,
+          name: file.name,
+          type: fileType,
+          preview,
+          alt: "",
+          tags: "",
+          progress: 0,
+          error: null,
+          uploaded: false,
+          imgError: false,
+        };
       });
+
+      const processed = (await Promise.all(tasks)).filter(Boolean);
+      validFiles.push(...processed);
 
       if (validationErrors.length > 0) {
         showToast(validationErrors.join("; "), "error");
@@ -76,7 +157,7 @@ export default function UploadModal({
         setFiles((prev) => [...prev, ...validFiles]);
       }
     },
-    [showToast]
+    [showToast, getVideoThumbnail]
   );
 
   const removeFile = (id) => {
@@ -95,7 +176,23 @@ export default function UploadModal({
     formData.append("alt", fileData.alt || "");
     formData.append("tags", fileData.tags || "");
 
-    return await adminApi.uploadMedia(formData);
+    // Use low-level http client to get upload progress
+    return await fetch(
+      `${
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
+      }/api/admin/media`,
+      {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      }
+    ).then(async (res) => {
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Upload failed");
+      }
+      return res.json();
+    });
   };
 
   const uploadS3File = async (fileData) => {
@@ -174,6 +271,17 @@ export default function UploadModal({
         mediaItem.id = mediaItem._id;
       }
 
+      // If this is a video and backend generated a thumbnail, update preview to thumbnail
+      if (mediaItem && mediaItem.type === "video" && mediaItem.thumbnailUrl) {
+        updateFile(fileData.id, {
+          preview: mediaItem.thumbnailUrl,
+          thumbnailUrl: mediaItem.thumbnailUrl,
+          type: mediaItem.type,
+          uploadedData: mediaItem,
+          imgError: false,
+        });
+      }
+
       return mediaItem;
     } catch (error) {
       updateFile(fileData.id, {
@@ -214,6 +322,60 @@ export default function UploadModal({
     }
   };
 
+  // Cleanup on remove for already-uploaded files
+  const handleRemove = async (file) => {
+    // If this file has been uploaded and we have media id, request deletion
+    const mediaId = file.uploadedData?._id || file.uploadedData?.id || file.id;
+    if (file.uploaded && mediaId) {
+      try {
+        // Prefer admin delete if available, otherwise user route
+        if (adminApi?.deleteMedia) {
+          await adminApi.deleteMedia(mediaId);
+        } else {
+          await fetch(
+            `${
+              import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
+            }/api/upload/${mediaId}`,
+            { method: "DELETE", credentials: "include" }
+          );
+        }
+      } catch (e) {
+        console.warn("Failed to delete uploaded media:", e?.message || e);
+      }
+    }
+    removeFile(file.id);
+  };
+
+  // Cleanup on modal close: delete any uploaded-but-not-submitted files
+  const closeWithCleanup = async () => {
+    try {
+      const uploadedButNotSubmitted = files.filter(
+        (f) => f.uploaded && f.uploadedData
+      );
+      for (const f of uploadedButNotSubmitted) {
+        const mediaId = f.uploadedData?._id || f.uploadedData?.id || f.id;
+        if (!mediaId) continue;
+        try {
+          if (adminApi?.deleteMedia) {
+            await adminApi.deleteMedia(mediaId);
+          } else {
+            await fetch(
+              `${
+                import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
+              }/api/upload/${mediaId}`,
+              { method: "DELETE", credentials: "include" }
+            );
+          }
+        } catch (e) {
+          console.warn("Failed to cleanup media on close:", e?.message || e);
+        }
+      }
+    } finally {
+      setFiles([]);
+      onClose?.();
+    }
+  };
+
   const onDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -246,7 +408,7 @@ export default function UploadModal({
             Tải lên Media ({uploadMode === "s3" ? "S3" : "Local"})
           </h3>
           <button
-            onClick={onClose}
+            onClick={closeWithCleanup}
             disabled={uploading}
             className="text-sm text-emerald-700 hover:underline disabled:opacity-50"
           >
@@ -291,7 +453,8 @@ export default function UploadModal({
             hoặc kéo thả file vào đây
           </p>
           <p className="text-xs text-emerald-800/50">
-            Hình ảnh & Video (tối đa 10MB) - JPEG, PNG, GIF, WebP, MP4, WebM
+            Hình ảnh & Video (tối đa 100MB) - JPEG, PNG, GIF, WebP, MP4, WebM,
+            MOV, AVI
           </p>
         </div>
 
@@ -319,16 +482,17 @@ export default function UploadModal({
                 >
                   {/* Preview */}
                   <div className="w-16 h-16 rounded-lg overflow-hidden bg-emerald-900/5 flex items-center justify-center flex-shrink-0">
-                    {f.type === "video" ? (
-                      <span className="text-xs font-medium text-emerald-700">
-                        VIDEO
-                      </span>
-                    ) : (
+                    {(f.thumbnailUrl || f.preview) && !f.imgError ? (
                       <img
-                        src={f.preview}
+                        src={f.thumbnailUrl || f.preview}
                         alt={f.name}
                         className="w-full h-full object-cover"
+                        onError={() => updateFile(f.id, { imgError: true })}
                       />
+                    ) : (
+                      <span className="text-xs font-medium text-emerald-700">
+                        {f.type === "video" ? "VIDEO" : "IMG"}
+                      </span>
                     )}
                   </div>
 
@@ -378,7 +542,7 @@ export default function UploadModal({
                     {/* Status */}
                     {f.uploaded && (
                       <div className="text-xs text-green-600 font-medium">
-                        ✓ Đã tải lên thành công
+                        <FaCheck className="inline mr-1" /> Đã tải lên thành công
                       </div>
                     )}
                     {f.error && (
@@ -388,11 +552,11 @@ export default function UploadModal({
 
                   {/* Remove button */}
                   <button
-                    onClick={() => removeFile(f.id)}
+                    onClick={() => handleRemove(f)}
                     disabled={uploading}
                     className="w-8 h-8 rounded-full bg-red-100 text-red-600 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-400 disabled:opacity-50 flex items-center justify-center text-xs"
                   >
-                    ×
+                    <FaTimes className="w-4 h-4" />
                   </button>
                 </div>
               ))}

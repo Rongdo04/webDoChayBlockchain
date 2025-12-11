@@ -1,19 +1,37 @@
 import React from "react";
+import { FaImage, FaClock, FaStar, FaUsers } from "react-icons/fa";
 
 export default function RecipeCard({ recipe }) {
-  // Xử lý URL ảnh từ populate object hoặc string
-  let imageUrl = null;
-  if (recipe?.images?.[0]) {
-    if (typeof recipe.images[0] === "string") {
-      imageUrl = recipe.images[0];
-    } else if (recipe.images[0]?.url) {
-      imageUrl = recipe.images[0].url;
-    } else if (recipe.images[0]?.filename) {
-      imageUrl = `/uploads/${recipe.images[0].filename}`;
-    }
-  } else if (recipe?.image) {
-    imageUrl = recipe.image;
-  }
+  // Chọn thumbnail ưu tiên cho video; fallback ảnh thường (ưu tiên thumbnailUrl)
+  const images = Array.isArray(recipe?.images) ? recipe.images : [];
+  const isVideoItem = (item) => {
+    if (!item || typeof item === "string") return false;
+    if (item.type === "video") return true;
+    if (item.mimeType && String(item.mimeType).startsWith("video")) return true;
+    const src = item.url || item.src || item.filename || "";
+    return /(\.mp4|\.webm|\.mov|\.avi)$/i.test(String(src));
+  };
+
+  const firstVideo = images.find((m) => isVideoItem(m));
+  const firstImage = images.find((m) => !isVideoItem(m)) || images[0];
+
+  const videoThumb = firstVideo?.thumbnailUrl || null;
+  const videoSrc =
+    (typeof firstVideo === "string" ? firstVideo : firstVideo?.url) || null;
+
+  const imageThumb = firstImage?.thumbnailUrl || null;
+  const imageSrc =
+    (typeof firstImage === "string"
+      ? firstImage
+      : firstImage?.url ||
+        (firstImage?.filename ? `/uploads/${firstImage.filename}` : null)) ||
+    null;
+
+  const hasVideo = Boolean(firstVideo);
+  const imageUrl =
+    (hasVideo ? videoThumb || videoSrc : imageThumb || imageSrc) ||
+    recipe?.image ||
+    null;
 
   // Tính tổng thời gian (phút)
   const totalMins = (() => {
@@ -43,15 +61,24 @@ export default function RecipeCard({ recipe }) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             onError={(e) => {
               e.currentTarget.style.display = "none";
-              e.currentTarget.parentElement.textContent = "📷";
+              e.currentTarget.style.display = "none";
+              const iconDiv = document.createElement("div");
+              iconDiv.className = "flex items-center justify-center";
+              iconDiv.innerHTML = '<svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/></svg>';
+              e.currentTarget.parentElement.appendChild(iconDiv);
             }}
           />
         ) : (
-          <div className="text-2xl">📷</div>
+          <FaImage className="text-2xl text-gray-400" />
         )}
 
         {/* Overlay badges */}
         <div className="absolute top-2 left-2 flex gap-1">
+          {hasVideo && (
+            <span className="px-2 py-1 bg-emerald-950/80 text-lime-200 text-[10px] font-semibold rounded-full">
+              VIDEO
+            </span>
+          )}
           {recipe.difficulty && (
             <span className="px-2 py-1 bg-white/90 text-emerald-700 text-xs font-medium rounded-full">
               {recipe.difficulty}
@@ -87,7 +114,7 @@ export default function RecipeCard({ recipe }) {
                 recipe.cookTime || 0
               }′`}
             >
-              ⏱️ {totalMins > 0 ? `${totalMins}′` : "N/A"}
+              <FaClock className="inline mr-1" /> {totalMins > 0 ? `${totalMins}′` : "N/A"}
             </span>
 
             {/* Rating */}
@@ -95,14 +122,14 @@ export default function RecipeCard({ recipe }) {
               className="flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-900/5 text-[10px] font-medium text-emerald-900"
               title={`${recipe.ratingCount || 0} lượt đánh giá`}
             >
-              ⭐ {rating}
+              <FaStar className="inline mr-1" /> {rating}
             </span>
           </div>
 
           {/* Servings */}
           {recipe.servings && (
             <span className="text-[10px] text-emerald-800/50">
-              👥 {recipe.servings}
+              <FaUsers className="inline mr-1" /> {recipe.servings}
             </span>
           )}
         </div>

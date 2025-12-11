@@ -22,7 +22,15 @@ const auditLogSchema = new mongoose.Schema(
     entityType: {
       type: String,
       required: true,
-      enum: ["recipe", "user", "system", "settings", "media", "comment"],
+      enum: [
+        "recipe",
+        "user",
+        "system",
+        "settings",
+        "media",
+        "comment",
+        "post",
+      ],
       default: "recipe",
     },
     entityId: {

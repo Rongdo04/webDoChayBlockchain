@@ -1,5 +1,6 @@
 // components/demo/TailwindDemo.jsx
 import React, { useState } from "react";
+import { FaCheckCircle } from "react-icons/fa";
 import { Button, Input, Card, Badge } from "../ui";
 
 const TailwindDemo = () => {
@@ -112,7 +113,7 @@ const TailwindDemo = () => {
                   Status Badges
                 </h4>
                 <div className="flex flex-wrap gap-3">
-                  <Badge variant="success" icon="✅">
+                  <Badge variant="success" icon={<FaCheckCircle />}>
                     Active
                   </Badge>
                   <Badge variant="warning" icon="⚠️">
@@ -151,7 +152,7 @@ const TailwindDemo = () => {
         <div className="grid md:grid-cols-3 gap-6">
           <Card hover shadow="soft">
             <Card.Header>
-              <Card.Title>🚀 Performance</Card.Title>
+              <Card.Title> Performance</Card.Title>
               <Card.Description>Lightning fast loading</Card.Description>
             </Card.Header>
             <Card.Content>

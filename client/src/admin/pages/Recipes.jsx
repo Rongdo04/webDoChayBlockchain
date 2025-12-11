@@ -201,7 +201,7 @@ export default function RecipesPage() {
   );
 
   // ---- Media helpers (reuse RecipeMediaStep behaviors)
-  const getMediaUrl = (m) => m?.url || null;
+  const getMediaUrl = (m) => m?.thumbnailUrl || m?.url || null;
   const openMediaFor = (recipe) => {
     setTargetRecipe(recipe);
     setMediaOpen(true);
@@ -355,7 +355,7 @@ export default function RecipesPage() {
         return firstImage;
       } else if (firstImage && typeof firstImage === "object") {
         // Case 1b: images is array of Media objects (populated)
-        return firstImage.url || firstImage.thumbnailUrl || null;
+        return firstImage.thumbnailUrl || firstImage.url || null;
       }
     }
 
@@ -447,15 +447,19 @@ export default function RecipesPage() {
             },
             draft: {
               label: t("status.draft", "Bản nháp"),
-              className: "bg-yellow-100 text-yellow-800",
+              className: "bg-gray-100 text-gray-800", // Màu xám cho nháp
+            },
+            pending: {
+              label: t("status.pending", "Chờ duyệt"),
+              className: "bg-yellow-100 text-yellow-800", // Nền vàng cho chờ duyệt
+            },
+            review: {
+              label: t("status.review", "Chờ duyệt"),
+              className: "bg-yellow-100 text-yellow-800", // Nền vàng cho chờ duyệt (alias)
             },
             rejected: {
               label: t("status.rejected", "Bị từ chối"),
               className: "bg-red-100 text-red-800",
-            },
-            review: {
-              label: t("status.review", "Chờ duyệt"),
-              className: "bg-blue-100 text-blue-800",
             },
           };
           const cfg = map[status] || {
@@ -770,9 +774,12 @@ export default function RecipesPage() {
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               e.currentTarget.style.display = "none";
-                              e.currentTarget.parentElement.textContent = "IMG";
+                              e.currentTarget.parentElement.textContent =
+                                m.type === "video" ? "VIDEO" : "IMG";
                             }}
                           />
+                        ) : m.type === "video" ? (
+                          "VIDEO"
                         ) : (
                           "IMG"
                         )}

@@ -5,6 +5,8 @@
  *  <Toast open type="success" title="Saved" message="Item saved" onClose={()=>{}} />
  */
 import React, { useEffect } from "react";
+import { FaCheck, FaExclamationCircle, FaInfoCircle, FaTimes } from "react-icons/fa";
+import { getErrorMessage, getSuccessMessage } from "../../lib/errorMapping.js";
 
 const typeStyle = {
   success: "bg-emerald-600",
@@ -17,9 +19,25 @@ export default function Toast({
   type = "info",
   title,
   message,
+  error, // New prop to pass error object
+  action, // New prop to specify action for success messages
   autoHide = 3000,
   onClose,
 }) {
+  // Process message based on type and props
+  const processedMessage = React.useMemo(() => {
+    if (message) return message;
+
+    if (type === "error" && error) {
+      return getErrorMessage(error);
+    }
+
+    if (type === "success" && action) {
+      return getSuccessMessage(action);
+    }
+
+    return message || "Thông báo";
+  }, [message, type, error, action]);
   useEffect(() => {
     if (!open || !autoHide) return;
     const t = setTimeout(() => onClose && onClose(), autoHide);
@@ -41,20 +59,20 @@ export default function Toast({
       >
         <div className="flex items-start gap-3 px-4 py-3">
           <div className="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-            {type === "success" && "✓"}
-            {type === "error" && "!"}
-            {type === "info" && "i"}
+            {type === "success" && <FaCheck className="w-4 h-4" />}
+            {type === "error" && <FaExclamationCircle className="w-4 h-4" />}
+            {type === "info" && <FaInfoCircle className="w-4 h-4" />}
           </div>
           <div className="text-sm">
             {title && <div className="font-semibold mb-0.5">{title}</div>}
-            <div className="leading-snug">{message}</div>
+            <div className="leading-snug">{processedMessage}</div>
           </div>
           <button
             aria-label="Đóng thông báo"
             onClick={() => onClose && onClose()}
             className="ml-auto text-white/80 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50 rounded"
           >
-            ✕
+            <FaTimes className="w-4 h-4" />
           </button>
         </div>
       </div>

@@ -1,15 +1,17 @@
 import React from "react";
+import { FaClock, FaStar, FaSortAlphaDown, FaFire, FaCalendarAlt } from "react-icons/fa";
+import { GiNewBorn } from "react-icons/gi";
 
 export default function SortBar({ sort, onSort, total }) {
   const sortOptions = [
-    { value: "newest", label: "Mới nhất", icon: "🆕" },
-    { value: "oldest", label: "Cũ nhất", icon: "📅" },
-    { value: "rating", label: "Đánh giá cao", icon: "⭐" },
-    { value: "rating-low", label: "Đánh giá thấp", icon: "⭐" },
-    { value: "time-asc", label: "Thời gian ít", icon: "⏱️" },
-    { value: "time-desc", label: "Thời gian nhiều", icon: "⏰" },
-    { value: "title", label: "A-Z", icon: "🔤" },
-    { value: "popular", label: "Phổ biến", icon: "🔥" },
+    { value: "newest", label: "Mới nhất", icon: GiNewBorn },
+    { value: "oldest", label: "Cũ nhất", icon: FaCalendarAlt },
+    { value: "rating", label: "Đánh giá cao", icon: FaStar },
+    { value: "rating-low", label: "Đánh giá thấp", icon: FaStar },
+    { value: "time-asc", label: "Thời gian ít", icon: FaClock },
+    { value: "time-desc", label: "Thời gian nhiều", icon: FaClock },
+    { value: "title", label: "A-Z", icon: FaSortAlphaDown },
+    { value: "popular", label: "Phổ biến", icon: FaFire },
   ];
 
   return (
@@ -25,7 +27,7 @@ export default function SortBar({ sort, onSort, total }) {
         >
           {sortOptions.map((option) => (
             <option key={option.value} value={option.value}>
-              {option.icon} {option.label}
+              {option.label}
             </option>
           ))}
         </select>

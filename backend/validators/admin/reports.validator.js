@@ -1,5 +1,6 @@
 // validators/admin/reports.validator.js
 import mongoose from "mongoose";
+import { body } from "express-validator";
 
 function buildError(details) {
   const err = new Error("Validation failed");
@@ -161,9 +162,23 @@ export function validateCreateReport(req, res, next) {
   next();
 }
 
+// Update report status validator
+export const validateUpdateStatus = [
+  body("status")
+    .isString()
+    .isIn(["pending", "reviewed", "resolved", "rejected"])
+    .withMessage("Trạng thái không hợp lệ"),
+  body("notes")
+    .optional()
+    .isString()
+    .isLength({ max: 1000 })
+    .withMessage("Ghi chú không được quá 1000 ký tự"),
+];
+
 export default {
   validateReportId,
   validateListReports,
   validateResolveReport,
   validateCreateReport,
+  validateUpdateStatus,
 };

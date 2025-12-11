@@ -82,7 +82,7 @@ const recipeSchema = new mongoose.Schema(
     ],
     status: {
       type: String,
-      enum: ["draft", "published", "rejected", "scheduled"],
+      enum: ["draft", "pending", "published", "rejected", "scheduled"],
       default: "draft",
       index: true,
     },
@@ -101,6 +101,11 @@ const recipeSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    views: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     authorId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -111,6 +116,40 @@ const recipeSchema = new mongoose.Schema(
       reason: { type: String },
       at: { type: Date },
       by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    },
+    // Blockchain metadata để bảo vệ bản quyền
+    blockchain: {
+      recipeHash: {
+        type: String,
+        default: null,
+        index: true,
+      },
+      authorWalletAddress: {
+        type: String,
+        default: null,
+      },
+      transactionHash: {
+        type: String,
+        default: null,
+        index: true,
+      },
+      blockNumber: {
+        type: Number,
+        default: null,
+      },
+      timestamp: {
+        type: Date,
+        default: null,
+      },
+      isVerified: {
+        type: Boolean,
+        default: false,
+      },
+      verificationReason: {
+        type: String,
+        default: null,
+        enum: [null, "hash_already_exists", "blockchain_error", "no_wallet_address"],
+      },
     },
   },
   {
@@ -127,6 +166,8 @@ recipeSchema.index({ createdAt: -1 });
 recipeSchema.index({ updatedAt: -1 });
 recipeSchema.index({ ratingAvg: -1, updatedAt: -1 });
 recipeSchema.index({ title: "text", summary: "text" });
+recipeSchema.index({ "blockchain.recipeHash": 1 });
+recipeSchema.index({ "blockchain.transactionHash": 1 });
 
 // Virtual for total time
 recipeSchema.virtual("totalTime").get(function () {
@@ -167,6 +208,7 @@ recipeSchema.statics.getStats = async function () {
   const result = {
     total: 0,
     draft: 0,
+    pending: 0,
     published: 0,
     rejected: 0,
     scheduled: 0,

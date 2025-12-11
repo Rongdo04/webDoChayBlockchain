@@ -21,7 +21,7 @@ httpClient.interceptors.request.use(
     // Log request in development
     if (process.env.NODE_ENV === "development") {
       console.log(
-        `🚀 ${config.method?.toUpperCase()} ${config.url}`,
+        ` ${config.method?.toUpperCase()} ${config.url}`,
         config.data
       );
     }
@@ -51,7 +51,7 @@ httpClient.interceptors.response.use(
     // Log successful responses in development
     if (config.isDevelopment() && config.DEBUG.ENABLE_LOGGING) {
       console.log(
-        `✅ ${response.config.method?.toUpperCase()} ${response.config.url}`,
+        `✓ ${response.config.method?.toUpperCase()} ${response.config.url}`,
         response.data
       );
     }
